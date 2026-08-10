@@ -1,0 +1,20 @@
+spring.application.name=datasourcems
+
+# Database
+spring.datasource.url=jdbc:postgresql://localhost:7654/emsdb
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+
+# Hibernate
+spring.jpa.hibernate.ddl-auto=create
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+
+## Locale
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.time-zone=Europe/Lisbon
+
+## JWT (authentication)
+security.jwt.secret-key=OSMELHORESBOLSEIROSDOTECNICOSAOOSDODEI#BESTBOLSEIROSEVER#OPERASFIXE123
+# Token lifetime in milliseconds (24h)
+security.jwt.expiration-ms=86400000
