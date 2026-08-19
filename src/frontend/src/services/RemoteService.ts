@@ -4,6 +4,8 @@ import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import DeiError from '@/models/DeiError'
 import type PersonDto from '@/models/PersonDto'
+import type SchoolDto from '@/models/SchoolDto'
+import type SubjectDto from '@/models/SubjectDto'
 import type AuthUser from '@/models/AuthUser'
 
 const httpClient = axios.create()
@@ -18,12 +20,67 @@ export interface LoginResponse {
 }
 
 export default class RemoteServices {
+  // --- People ---
   static async getPeople(): Promise<PersonDto[]> {
     return httpClient.get('/people')
   }
 
   static async createPerson(person: PersonDto): Promise<PersonDto> {
     return httpClient.post('/people', person)
+  }
+
+  static async getPerson(id: number): Promise<PersonDto> {
+    return httpClient.get(`/people/${id}`)
+  }
+
+  static async updatePerson(id: number, person: PersonDto): Promise<PersonDto> {
+    return httpClient.put(`/people/${id}`, person)
+  }
+
+  static async deletePerson(id: number): Promise<void> {
+    return httpClient.delete(`/people/${id}`)
+  }
+
+  // --- Schools ---
+  static async getSchools(): Promise<SchoolDto[]> {
+    return httpClient.get('/schools')
+  }
+
+  static async createSchool(school: SchoolDto): Promise<SchoolDto> {
+    return httpClient.post('/schools', school)
+  }
+
+  static async getSchool(id: number): Promise<SchoolDto> {
+    return httpClient.get(`/schools/${id}`)
+  }
+
+  static async updateSchool(id: number, school: SchoolDto): Promise<SchoolDto> {
+    return httpClient.put(`/schools/${id}`, school)
+  }
+
+  static async deleteSchool(id: number): Promise<void> {
+    return httpClient.delete(`/schools/${id}`)
+  }
+
+  // --- Subjects ---
+  static async getSubjects(): Promise<SubjectDto[]> {
+    return httpClient.get('/subjects')
+  }
+
+  static async createSubject(subject: SubjectDto): Promise<SubjectDto> {
+    return httpClient.post('/subjects', subject)
+  }
+
+  static async getSubject(id: number): Promise<SubjectDto> {
+    return httpClient.get(`/subjects/${id}`)
+  }
+
+  static async updateSubject(id: number, subject: SubjectDto): Promise<SubjectDto> {
+    return httpClient.put(`/subjects/${id}`, subject)
+  }
+
+  static async deleteSubject(id: number): Promise<void> {
+    return httpClient.delete(`/subjects/${id}`)
   }
 
   // --- Authentication ---

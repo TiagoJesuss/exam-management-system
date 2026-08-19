@@ -3,6 +3,8 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import PeopleView from '@/views/people/PeopleView.vue'
 import StatisticsView from '@/views/statistics/StatisticsView.vue'
+import SchoolsView from '@/views/schools/SchoolsView.vue'
+import SubjectsView from '@/views/subjects/SubjectsView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -30,6 +32,18 @@ const router = createRouter({
       name: 'statistics',
       component: StatisticsView,
       meta: { permission: 'STATISTICS_READ' }
+    },
+    {
+      path: '/schools',
+      name: 'schools',
+      component: SchoolsView,
+      meta: { permission: 'SCHOOL_READ' }
+    },
+    {
+      path: '/subjects',
+      name: 'subjects',
+      component: SubjectsView,
+      meta: { permission: 'SUBJECT_READ' }
     }
   ]
 })

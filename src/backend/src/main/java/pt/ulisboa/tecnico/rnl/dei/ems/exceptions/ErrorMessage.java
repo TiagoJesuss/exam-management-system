@@ -8,6 +8,10 @@ public enum ErrorMessage {
 	PERSON_EMAIL_NOT_VALID("O email especificado não é válido.", 1004),
 	PERSON_PASSWORD_NOT_VALID("A palavra-passe especificada não é válida.", 1005),
 	EMAIL_ALREADY_EXISTS("Já existe uma conta com o email %s", 1006),
+	SUBJECT_ALREADY_EXISTS("Já existe um subject com o código %s", 1007),
+	SCHOOL_ALREADY_EXISTS("Já existe uma escola com o código %s", 1008),
+	NO_SUCH_SUBJECT("Não existe nenhum subject com o ID %s", 1009),
+	NO_SUCH_SCHOOL("Não existe nenhuma escola com o ID %s", 1010),
 
 	INVALID_CREDENTIALS("Email ou palavra-passe inválidos.", 2001),
 	CANNOT_IMPERSONATE_SELF("Não é possível personificar a própria conta.", 2002),

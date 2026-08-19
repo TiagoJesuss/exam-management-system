@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import type PeopleDto from '@/models/PeopleDto'
+import type PersonDto from '@/models/PersonDto'
 import RemoteService from '@/services/RemoteService'
 import CreatePersonDialog from './CreatePersonDialog.vue'
 import { reactive, ref } from 'vue'
@@ -74,35 +74,31 @@ const headers = [
   {
     title: 'Nome',
     key: 'name',
-    value: 'name',
     sortable: true,
     filterable: true
   },
   {
     title: 'IST ID',
     key: 'istId',
-    value: 'istId',
     sortable: true,
     filterable: true
   },
   {
     title: 'Tipo',
     key: 'type',
-    value: 'type',
     sortable: true,
     filterable: true
   },
   {
     title: 'Ações',
     key: 'actions',
-    value: 'actions',
     sortable: false,
     filterable: false
   }
   // TODO: maybe add another column with possible actions? (edit / delete)
 ]
 
-const people: PeopleDto[] = reactive([])
+const people: PersonDto[] = reactive([])
 
 getPeople()
 async function getPeople() {
@@ -112,11 +108,11 @@ async function getPeople() {
   console.log(people)
 }
 
-const editPerson = (person: PeopleDto) => {
+const editPerson = (person: PersonDto) => {
   console.log('Editing person:', person)
 }
 
-const deletePerson = (person: PeopleDto) => {
+const deletePerson = (person: PersonDto) => {
   console.log('Deleting person:', person)
 }
 
