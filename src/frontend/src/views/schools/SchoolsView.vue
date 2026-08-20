@@ -5,6 +5,11 @@
     </v-col>
     <v-col cols="auto">
       <CreateSchoolDialog @school-created="getSchools" />
+      <EditSchoolDialog
+        v-model="editDialogOpen"
+        :school="schoolToEdit"
+        @school-updated="getSchools"
+      />
     </v-col>
   </v-row>
 
@@ -29,8 +34,17 @@
     no-data-text="Sem escolas a apresentar."
   >
     <template v-slot:[`item.actions`]="{ item }">
-      <v-icon @click="editSchool(item)" class="mr-2">mdi-pencil</v-icon>
-      <v-icon @click="deleteSchool(item)">mdi-delete</v-icon>
+      <v-icon
+        v-if="auth.hasPermission('SCHOOL_UPDATE')"
+        @click="editSchool(item)"
+        class="mr-2"
+        title="Editar"
+      >mdi-pencil</v-icon>
+      <v-icon
+        v-if="auth.hasPermission('SCHOOL_DELETE')"
+        @click="deleteSchool(item)"
+        title="Apagar"
+      >mdi-delete</v-icon>
     </template>
 
   </v-data-table>
@@ -41,7 +55,11 @@
 import type SchoolDto from '@/models/SchoolDto'
 import RemoteService from '@/services/RemoteService'
 import CreateSchoolDialog from './CreateSchoolDialog.vue'
+import EditSchoolDialog from './EditSchoolDialog.vue'
 import { reactive, ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 const schools = reactive([])
 
@@ -64,11 +82,15 @@ async function getSchools() {
 }
 
 const editSchool = (school: SchoolDto) => {
-  console.log('Editing school:', school)
+  schoolToEdit.value = school
+  editDialogOpen.value = true
 }
 
-const deleteSchool = (school: SchoolDto) => {
-  console.log('Deleting school:', school)
+const deleteSchool = async (school: SchoolDto) => {
+  const ok = confirm(`Apagar ${school.name}?`)
+  if (!ok) return
+  await RemoteService.deleteSchool(school.id!)
+  await getSchools()
 }
 
 
@@ -77,5 +99,8 @@ const fuzzySearch = (value: string, search: string) => {
   let searchRegex = new RegExp(search.split('').join('.*'), 'i')
   return searchRegex.test(value)
 }
+
+const schoolToEdit = ref<SchoolDto | null>(null)
+const editDialogOpen = ref(false)
 
 </script>

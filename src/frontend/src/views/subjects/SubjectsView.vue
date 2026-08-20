@@ -5,6 +5,11 @@
     </v-col>
     <v-col cols="auto">
       <CreateSubjectDialog @subject-created="getSubjects" />
+      <EditSubjectDialog
+        v-model="editDialogOpen"
+        :subject="subjectToEdit"
+        @subject-updated="getSubjects"
+      />
     </v-col>
   </v-row>
 
@@ -30,8 +35,17 @@
   >
 
     <template v-slot:[`item.actions`]="{ item }">
-      <v-icon @click="editSubject(item)" class="mr-2">mdi-pencil</v-icon>
-      <v-icon @click="deleteSubject(item)">mdi-delete</v-icon>
+      <v-icon
+        v-if="auth.hasPermission('SUBJECT_UPDATE')"
+        @click="editSubject(item)"
+        class="mr-2"
+        title="Editar"
+      >mdi-pencil</v-icon>
+      <v-icon
+        v-if="auth.hasPermission('SUBJECT_DELETE')"
+        @click="deleteSubject(item)"
+        title="Apagar"
+      >mdi-delete</v-icon>
     </template>
 
   </v-data-table>
@@ -42,7 +56,11 @@
 import type SubjectDto from '@/models/SubjectDto'
 import RemoteService from '@/services/RemoteService'
 import CreateSubjectDialog from './CreateSubjectDialog.vue'
+import EditSubjectDialog from './EditSubjectDialog.vue'
 import { reactive, ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 let search = ref('')
 let loading = ref(true)
@@ -79,11 +97,15 @@ async function getSubjects() {
 }
 
 const editSubject = (subject: SubjectDto) => {
-  console.log('Editing subject:', subject)
+  subjectToEdit.value = subject
+  editDialogOpen.value = true
 }
 
-const deleteSubject = (subject: SubjectDto) => {
-  console.log('Deleting subject:', subject)
+const deleteSubject = async (subject: SubjectDto) => {
+  const ok = confirm(`Apagar ${subject.name}?`)
+  if (!ok) return
+  await RemoteService.deleteSubject(subject.id!)
+  await getSubjects()
 }
 
 
@@ -92,5 +114,8 @@ const fuzzySearch = (value: string, search: string) => {
   let searchRegex = new RegExp(search.split('').join('.*'), 'i')
   return searchRegex.test(value)
 }
+
+const subjectToEdit = ref<SubjectDto | null>(null)
+const editDialogOpen = ref(false)
 
 </script>

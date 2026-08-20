@@ -2,7 +2,8 @@ package pt.ulisboa.tecnico.rnl.dei.ems.person.domain;
 
 
 import jakarta.persistence.*;
-
+import pt.ulisboa.tecnico.rnl.dei.ems.school.domain.School;
+import pt.ulisboa.tecnico.rnl.dei.ems.subject.domain.Subject;
 import lombok.Data;
 import lombok.ToString;
 
@@ -41,7 +42,26 @@ public class Person {
 	@Enumerated(EnumType.STRING)
     private PersonType type;
 
+	@ManyToOne
+	@JoinColumn(name = "school_id")
+	private School school;
+
+	@ManyToOne
+	@JoinColumn(name = "subject_id")
+	private Subject subject;
+
 	protected Person() {
+	}
+
+	public Person(String name, String email, String password, PersonType type, School school) {
+		this(name, email, password, type, school, null);
+
+	}
+
+	public Person(String name, String email, String password, PersonType type, School school, Subject subject) {
+		this(name, email, password, type);
+		this.school = school;
+		this.subject = subject;
 	}
 
 	public Person(String name, String email, String password, PersonType type) {

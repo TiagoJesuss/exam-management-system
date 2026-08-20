@@ -5,6 +5,8 @@ export default class PersonDto {
   // Write-only: sent when creating/updating, never returned by the backend.
   password?: string
   type?: string
+  schoolCode?: string
+  subjectCode?: string
 
   constructor(obj?: Partial<PersonDto>) {
     Object.assign(this, obj)

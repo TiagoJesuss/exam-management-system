@@ -39,8 +39,8 @@ public class SubjectService {
 		}
 
 		Subject subject = new Subject(
-				subjectDto.code(),
-				subjectDto.name());
+				subjectDto.name(),
+				subjectDto.code());
 		return new SubjectDto(subjectRepository.save(subject));
 	}
 

@@ -5,6 +5,11 @@
     </v-col>
     <v-col cols="auto">
       <CreatePersonDialog @person-created="getPeople" />
+      <EditPersonDialog
+        v-model="editDialogOpen"
+        :person="personToEdit"
+        @person-updated="getPeople"
+      />
     </v-col>
   </v-row>
 
@@ -32,11 +37,11 @@
       <v-chip v-if="item.type === 'ADMINISTRATOR'" color="purple" text-color="white">
         Administrador
       </v-chip>
-      <v-chip v-else-if="item.type === 'MAIN_TEACHER'" color="red" text-color="white">
-        Professor Regente
+      <v-chip v-else-if="item.type === 'SCHOOL_STAFF'" color="blue" text-color="white">
+        Funcionário
       </v-chip>
-      <v-chip v-else-if="item.type === 'TEACHING_ASSISTANT'" color="blue" text-color="white">
-        Professor Assistente
+      <v-chip v-else-if="item.type === 'TEACHER'" color="red" text-color="white">
+        Professor
       </v-chip>
       <v-chip v-else color="green" text-color="white">
         Aluno
@@ -50,8 +55,35 @@
         color="primary"
         title="Personificar"
       >mdi-account-switch</v-icon>
-      <v-icon @click="editPerson(item)" class="mr-2">mdi-pencil</v-icon>
-      <v-icon @click="deletePerson(item)">mdi-delete</v-icon>
+      <v-icon
+        v-if="auth.hasPermission('PERSON_UPDATE')"
+        @click="editPerson(item)"
+        class="mr-2"
+        title="Editar"
+      >mdi-pencil</v-icon>
+      <v-icon
+        v-if="auth.hasPermission('PERSON_DELETE') && item.id !== auth.user?.id"
+        @click="deletePerson(item)"
+        title="Apagar"
+      >mdi-delete</v-icon>
+    </template>
+
+    <template v-slot:[`item.schoolCode`]="{ item }">
+      <v-chip
+        v-if="item.type === 'TEACHER' && !item.schoolCode"
+        size="small"
+        color="warning"
+      >Sem escola</v-chip>
+      <span v-else>{{ item.schoolCode }}</span>
+    </template>
+
+    <template v-slot:[`item.subjectCode`]="{ item }">
+      <v-chip
+        v-if="item.type === 'TEACHER' && !item.subjectCode"
+        size="small"
+        color="warning"
+      >Sem disciplina</v-chip>
+      <span v-else>{{ item.subjectCode }}</span>
     </template>
 
   </v-data-table>
@@ -62,6 +94,7 @@
 import type PersonDto from '@/models/PersonDto'
 import RemoteService from '@/services/RemoteService'
 import CreatePersonDialog from './CreatePersonDialog.vue'
+import EditPersonDialog from './EditPersonDialog.vue'
 import { reactive, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -94,6 +127,18 @@ const headers = [
     key: 'actions',
     sortable: false,
     filterable: false
+  },
+  {
+    title: "Escola",
+    key: "schoolCode",
+    sortable: true,
+    filterable: true
+  },
+  {
+    title: "Disciplina",
+    key: "subjectCode",
+    sortable: true,
+    filterable: true
   }
   // TODO: maybe add another column with possible actions? (edit / delete)
 ]
@@ -109,11 +154,15 @@ async function getPeople() {
 }
 
 const editPerson = (person: PersonDto) => {
-  console.log('Editing person:', person)
+  personToEdit.value = person
+  editDialogOpen.value = true
 }
 
-const deletePerson = (person: PersonDto) => {
-  console.log('Deleting person:', person)
+const deletePerson = async (person: PersonDto) => {
+  const ok = confirm(`Apagar ${person.name}?`)
+  if (!ok) return
+  await RemoteService.deletePerson(person.id!)
+  await getPeople()
 }
 
 // Admin-only: log in as the selected person, then refresh the list under their
@@ -129,5 +178,8 @@ const fuzzySearch = (value: string, search: string) => {
   let searchRegex = new RegExp(search.split('').join('.*'), 'i')
   return searchRegex.test(value)
 }
+
+const personToEdit = ref<PersonDto | null>(null)
+const editDialogOpen = ref(false)
 
 </script>

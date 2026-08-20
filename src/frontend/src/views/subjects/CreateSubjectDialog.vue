@@ -27,11 +27,9 @@
           <v-btn
             color="primary"
             text="Save"
-            variant="tonal"
-            @click="
-              dialog = false,
-              saveSubject()
-            "
+            :variant="isFormValid ? 'flat' : 'tonal'"
+            :disabled="!isFormValid"
+            @click="saveSubject"
           ></v-btn>
         </v-card-actions>
       </v-card>
@@ -40,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type SubjectDto from '@/models/SubjectDto'
 import RemoteService from '@/services/RemoteService'
 
@@ -55,10 +53,25 @@ const newSubject = ref<SubjectDto>({
 
 const saveSubject = async () => {
   await RemoteService.createSubject(newSubject.value)
+  dialog.value = false
+  emit('subject-created')
+}
+
+const isFormValid = computed(() => {
+  const s = newSubject.value
+  return !!(s.name?.trim() && s.code?.trim())
+})
+
+const resetForm = () => {
   newSubject.value = {
     name: '',
     code: ''
   }
-  emit('subject-created')
 }
+
+watch(dialog, (isOpen) => {
+  if (!isOpen) {
+    resetForm()
+  }
+})
 </script>

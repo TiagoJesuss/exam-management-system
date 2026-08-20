@@ -27,7 +27,27 @@
             label="Categoria*"
             required
             v-model="newPerson.type"
+            @update:model-value="onTypeChange"
             ></v-select>
+
+            <v-select
+            v-if="needsSubject"
+            :items="subjectOptions"
+            item-title="title"
+            item-value="value"
+            label="Disciplina"
+            v-model="newPerson.subjectCode"
+            ></v-select>
+
+            <v-select
+            v-if="needsSchool"
+            :items="schoolOptions"
+            item-title="title"
+            item-value="value"
+            :label="schoolLabel"
+            v-model="newPerson.schoolCode"
+            ></v-select>
+
         </v-card-text>
 
         <v-divider></v-divider>
@@ -40,11 +60,9 @@
           <v-btn
             color="primary"
             text="Save"
-            variant="tonal"
-            @click="
-              dialog = false,
-              savePerson()
-            "
+            :variant="isFormValid ? 'flat' : 'tonal'"
+            :disabled="!isFormValid"
+            @click="savePerson"
           ></v-btn>
         </v-card-actions>
       </v-card>
@@ -53,9 +71,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import type PersonDto from '@/models/PersonDto'
 import RemoteService from '@/services/RemoteService'
+import type SchoolDto from '@/models/SchoolDto'
+import type SubjectDto from '@/models/SubjectDto'
 
 const dialog = ref(false)
 
@@ -72,18 +92,107 @@ const newPerson = ref<PersonDto>({
   name: '',
   email: '',
   password: '',
-  type: ''
+  type: '',
+  schoolCode: '',
+  subjectCode: ''
 })
 
 const savePerson = async () => {
-  newPerson.value.type = typeMappings[newPerson.value.type as keyof typeof typeMappings]
-  await RemoteService.createPerson(newPerson.value)
+  const type = typeMappings[newPerson.value.type as keyof typeof typeMappings]
+
+  const payload: PersonDto = {
+    name: newPerson.value.name,
+    email: newPerson.value.email,
+    password: newPerson.value.password,
+    type: type,
+    schoolCode: type === 'ADMINISTRATOR' || !newPerson.value.schoolCode?.trim()
+      ? undefined
+      : newPerson.value.schoolCode,
+    subjectCode: type !== 'TEACHER' || !newPerson.value.subjectCode?.trim()
+      ? undefined
+      : newPerson.value.subjectCode
+  }
+
+  await RemoteService.createPerson(payload)
+  dialog.value = false
+  emit('person-created')
+}
+
+const schools = ref<SchoolDto[]>([])
+
+const subjects = ref<SubjectDto[]>([])
+
+onMounted(async () => { 
+  schools.value = await RemoteService.getSchools()
+  subjects.value = await RemoteService.getSubjects() 
+})
+
+const schoolOptions = computed(() =>
+  schools.value.map(s => ({
+    title: `${s.code} - ${s.name}`,
+    value: s.code
+  }))
+)
+
+const subjectOptions = computed(() =>
+  subjects.value.map(s => ({
+    title: `${s.code} - ${s.name}`,
+    value: s.code
+  }))
+)
+
+const onTypeChange = (type: string) => {
+  if (type === 'Administrador') {
+    newPerson.value.schoolCode = ''
+  } 
+  if (type !== 'Professor') {
+    newPerson.value.subjectCode = ''
+  }
+}
+
+const needsSchool = computed(() =>
+  newPerson.value.type !== '' && newPerson.value.type !== 'Administrador'
+)
+
+const needsSubject = computed(() =>
+  newPerson.value.type === 'Professor'
+)
+
+const schoolLabel = computed(() =>
+  newPerson.value.type === 'Professor' ? 'Escola' : 'Escola*'
+)
+
+const isFormValid = computed(() => {
+  const p = newPerson.value
+  if (!p.name?.trim()) return false
+  if (!p.email?.trim()) return false
+  if (!p.type) return false
+  if (!p.password?.trim()) return false
+
+  // Professor: escola e disciplina opcionais
+  if (p.type === 'Professor') return true
+
+  // Escola obrigatória só para Aluno e Funcionário
+  if ((p.type === 'Aluno' || p.type === 'Funcionário') && !p.schoolCode) return false
+
+  return true
+})
+
+const resetForm = () => {
   newPerson.value = {
     name: '',
     email: '',
     password: '',
-    type: ''
+    type: '',
+    schoolCode: '',
+    subjectCode: ''
   }
-  emit('person-created')
 }
+
+watch(dialog, (isOpen) => {
+  if (!isOpen) {
+    resetForm()
+  }
+})
+
 </script>

@@ -28,11 +28,9 @@
           <v-btn
             color="primary"
             text="Save"
-            variant="tonal"
-            @click="
-              dialog = false,
-              saveSchool()
-            "
+            :variant="isFormValid ? 'flat' : 'tonal'"
+            :disabled="!isFormValid"
+            @click="saveSchool"
           ></v-btn>
         </v-card-actions>
       </v-card>
@@ -41,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type SchoolDto from '@/models/SchoolDto'
 import RemoteService from '@/services/RemoteService'
 
@@ -57,11 +55,26 @@ const newSchool = ref<SchoolDto>({
 
 const saveSchool = async () => {
   await RemoteService.createSchool(newSchool.value)
+  dialog.value = false
+  emit('school-created')
+}
+
+const isFormValid = computed(() => {
+  const s = newSchool.value
+  return !!(s.name?.trim() && s.code?.trim() && s.region?.trim())
+})
+
+const resetForm = () => {
   newSchool.value = {
     name: '',
     region: '',
     code: ''
   }
-  emit('school-created')
 }
+
+watch(dialog, (isOpen) => {
+  if (!isOpen) {
+    resetForm()
+  }
+})
 </script>
