@@ -7,4 +7,5 @@ export default interface AuthUser {
   permissions: string[]
   impersonating: boolean
   impersonatorEmail?: string | null
+  schoolCode?: string | null
 }

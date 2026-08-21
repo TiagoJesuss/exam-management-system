@@ -9,5 +9,6 @@ public record AuthUserDto(
 		String role,
 		List<String> permissions,
 		boolean impersonating,
-		String impersonatorEmail) {
+		String impersonatorEmail,
+		String schoolCode) {
 }

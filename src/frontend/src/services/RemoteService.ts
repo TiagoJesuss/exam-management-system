@@ -6,6 +6,8 @@ import DeiError from '@/models/DeiError'
 import type PersonDto from '@/models/PersonDto'
 import type SchoolDto from '@/models/SchoolDto'
 import type SubjectDto from '@/models/SubjectDto'
+import type ExamDto from '@/models/ExamDto'
+import type EvaluateInboxDto from '@/models/EvaluateInboxDto'
 import type AuthUser from '@/models/AuthUser'
 
 const httpClient = axios.create()
@@ -81,6 +83,64 @@ export default class RemoteServices {
 
   static async deleteSubject(id: number): Promise<void> {
     return httpClient.delete(`/subjects/${id}`)
+  }
+
+  // --- Exams ---
+  static async getExams(): Promise<ExamDto[]> {
+    return httpClient.get('/exams')
+  }
+
+  static async uploadExam(file: File, studentId: number, subjectCode: string): Promise<ExamDto> {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('studentId', String(studentId))
+    formData.append('subjectCode', subjectCode)
+    return httpClient.post('/exams', formData, {
+      headers: { 'Content-Type': undefined }
+    })
+  }
+
+  static async getExamFile(id: number): Promise<Blob> {
+    return httpClient.get(`/exams/${id}/file`, { responseType: 'blob' })
+  }
+
+  static async segmentExam(
+    examId: number,
+    pages: { blob: Blob; maxScore: number }[]
+  ): Promise<ExamDto> {
+    const formData = new FormData()
+    for (const page of pages) {
+      formData.append('files', page.blob, 'question.png')
+      formData.append('maxScores', String(page.maxScore))
+    }
+    return httpClient.post(`/exams/${examId}/segment`, formData, {
+      headers: { 'Content-Type': undefined }
+    })
+  }
+
+  static async lockExams(): Promise<ExamDto[]> {
+    return httpClient.post('/exams/lock')
+  }
+
+  static async distributeExams(): Promise<{ assignedCount: number; forcedSameSchoolCount: number }> {
+    return httpClient.post('/exams/distribute')
+  }
+
+  // --- Evaluates (grading) ---
+  static async getMyEvaluates(): Promise<EvaluateInboxDto[]> {
+    return httpClient.get('/evaluates/mine')
+  }
+
+  static async getEvaluate(id: number): Promise<EvaluateInboxDto> {
+    return httpClient.get(`/evaluates/${id}`)
+  }
+
+  static async getEvaluateImage(id: number): Promise<Blob> {
+    return httpClient.get(`/evaluates/${id}/image`, { responseType: 'blob' })
+  }
+
+  static async submitGrade(id: number, grade: number): Promise<EvaluateInboxDto> {
+    return httpClient.put(`/evaluates/${id}/grade`, { grade })
   }
 
   // --- Authentication ---

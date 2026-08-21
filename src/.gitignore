@@ -4,6 +4,7 @@ target/
 !**/src/main/**
 !**/src/test/**
 data/
+uploads/
 nano.save
 ### STS ###
 .apt_generated

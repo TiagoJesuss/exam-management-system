@@ -5,6 +5,11 @@ import PeopleView from '@/views/people/PeopleView.vue'
 import StatisticsView from '@/views/statistics/StatisticsView.vue'
 import SchoolsView from '@/views/schools/SchoolsView.vue'
 import SubjectsView from '@/views/subjects/SubjectsView.vue'
+import ExamUploadView from '@/views/exams/ExamUploadView.vue'
+import ExamsView from '@/views/exams/ExamsView.vue'
+import ExamSegmentView from '@/views/exams/ExamSegmentView.vue'
+import GradingInboxView from '@/views/grading/GradingInboxView.vue'
+import GradingDetailView from '@/views/grading/GradingDetailView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -44,6 +49,36 @@ const router = createRouter({
       name: 'subjects',
       component: SubjectsView,
       meta: { permission: 'SUBJECT_READ' }
+    },
+    {
+      path: '/exams',
+      name: 'exams',
+      component: ExamsView,
+      meta: { permission: 'EXAM_READ' }
+    },
+    {
+      path: '/exams/upload',
+      name: 'exam-upload',
+      component: ExamUploadView,
+      meta: { permission: 'EXAM_CREATE' }
+    },
+    {
+      path: '/exams/:id/segment',
+      name: 'exam-segment',
+      component: ExamSegmentView,
+      meta: { permission: 'EXAM_READ' }
+    },
+    {
+      path: '/grading',
+      name: 'grading',
+      component: GradingInboxView,
+      meta: { permission: 'EVALUATE_READ' }
+    },
+    {
+      path: '/grading/:id',
+      name: 'grading-detail',
+      component: GradingDetailView,
+      meta: { permission: 'EVALUATE_READ' }
     }
   ]
 })
