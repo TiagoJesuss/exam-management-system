@@ -576,10 +576,7 @@ public class ExamService {
 			throw new DEIException(ErrorMessage.NOT_AUTHENTICATED);
 		}
 
-		boolean submissionsLocked = examRepository.findAll().stream()
-				.anyMatch(exam -> exam.getState() == ExamState.LOCKED
-						|| exam.getState() == ExamState.IN_GRADING);
-		if (submissionsLocked) {
+		if (areSubmissionsLocked()) {
 			throw new DEIException(ErrorMessage.EXAM_SUBMISSIONS_LOCKED);
 		}
 
@@ -636,10 +633,23 @@ public class ExamService {
 			questionRepository.save(new Question(exam, number, maxScore, path));
 		}
 
-		boolean submissionsClosed = examRepository.findAll().stream()
-				.anyMatch(e -> e.getState() == ExamState.LOCKED || e.getState() == ExamState.IN_GRADING);
+		boolean submissionsClosed = areSubmissionsLocked();
 		exam.setState(submissionsClosed ? ExamState.LOCKED : ExamState.SEGMENTED);
 		return new ExamDto(examRepository.save(exam));
+	}
+
+
+	private boolean areSubmissionsLocked() {
+		EnumSet<ExamState> midCycle = EnumSet.of(
+				ExamState.LOCKED,
+				ExamState.IN_GRADING,
+				ExamState.GRADED,
+				ExamState.GRADES_PUBLISHED,
+				ExamState.RELEASED,
+				ExamState.REVIEW_CLOSED,
+				ExamState.REVIEW_GRADING);
+		return examRepository.findAll().stream()
+				.anyMatch(exam -> midCycle.contains(exam.getState()));
 	}
 
 	private String storePdf(MultipartFile file, long studentId, String subjectCode) {

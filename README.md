@@ -216,7 +216,7 @@ UPLOADED → SEGMENTED → LOCKED → IN_GRADING → GRADED
 
 - **UPLOADED** — PDF carregado pelo funcionário.
 - **SEGMENTED** — dividido em perguntas (fragmentos PNG).
-- **LOCKED** — submissões fechadas; pronto para distribuição.
+- **LOCKED** — submissões fechadas; pronto para distribuição. Novos uploads só voltam a ser permitidos quando não houver exames a meio do ciclo (estados entre `LOCKED` e `REVIEW_GRADING`); exames só em `UPLOADED` / `SEGMENTED` / `FINAL` deixam as submissões abertas.
 - **IN_GRADING** — fragmentos atribuídos a professores.
 - **GRADED** — todas as correções iniciais concluídas; nota final calculada.
 - **GRADES_PUBLISHED** — notas visíveis ao aluno; prazo de revisão activo.
