@@ -128,7 +128,7 @@ Contas úteis para testar fluxos: **aluno6@** (notas publicadas), **aluno7@** (P
 
 ## Decisões de arquitetura
 
-- **Organização backend:** pacotes por domínio (`person`, `school`, `subject`, `exam`, `question`, `evaluate`, `reviewrequest`, `statistics`), cada um com entity, repository, service, controller e DTOs — alinhado com o starter do projecto.
+- **Organização backend:** pacotes por domínio (`person`, `school`, `subject`, `exam`, `question`, `evaluate`, `reviewrequest`, `audit`, `statistics`), cada um com entity, repository, service, controller e DTOs — alinhado com o starter do projecto.
 - **Autenticação:** JWT stateless; cada `Person` tem um `PersonType` que mapeia para permissões em `RolePermissions`. O frontend consulta `auth.hasPermission()` para mostrar rotas e acções.
 - **Autorização:** anotações `@PreAuthorize` nos controllers + validações de negócio nos services (ex.: funcionário só acede a exames da sua escola).
 - **Erros:** excepções de negócio via `DEIException` → `CustomExceptionHandler` devolve JSON uniforme (`message`, `code`). No frontend, alerta global + `RemoteService.consumeError()` evita mensagens duplicadas.
@@ -140,6 +140,7 @@ Contas úteis para testar fluxos: **aluno6@** (notas publicadas), **aluno7@** (P
 - **Distribuição:** atribuição equilibrada por carga **ponderada** segundo o tipo de pergunta (`ems.grading.weight.*` em `application.properties`); preferência por professor de escola diferente da do aluno.
 - **Seed:** `DataInitializer` (`CommandLineRunner`) corre primeiro; `ExamDemoSeeder` usa `ApplicationReadyEvent` para garantir que pessoas e escolas já existem.
 - **Estatísticas:** agregações no backend; visualização com Chart.js / vue-chartjs no frontend.
+- **Auditoria:** log append-only (`audit_logs`) de mutações de domínio: CRUD de pessoas/escolas/disciplinas, upload e segmentação de exames, notas, lock, distribuição, publicação, disponibilização e pedidos/distribuição de revisão. Em edições, a mensagem lista os campos alterados (sem valor de password). O actor é o utilizador efectivo; se houver impersonação, a mensagem inclui `(personificado por {email do admin})`. Só o administrador consulta (`GET /audit-logs`, permissão `AUDIT_READ`); não há API de update/delete. Seeders não geram entradas.
 
 ---
 
@@ -157,7 +158,7 @@ O sistema usa **JWT stateless** com permissões derivadas do `PersonType` ([`Rol
 
 | Perfil | Acesso principal |
 |--------|------------------|
-| **Administrador** | Tudo (CRUD global, lock, distribuição, impersonação); dashboard de estatísticas global |
+| **Administrador** | Tudo (CRUD global, lock, distribuição, impersonação); dashboard de estatísticas global; registo de auditoria |
 | **Funcionário** | Pessoas e exames da **sua escola**; upload, segmentação, publicar/libertar notas; criar/editar **apenas alunos** da escola; estatísticas da escola |
 | **Professor** | Inbox de correcções (sem identidade do aluno); listagem de pessoas **da sua escola** (leitura) |
 | **Aluno** | Consulta das **próprias** provas e notas; pedidos de revisão |
@@ -169,6 +170,7 @@ O sistema usa **JWT stateless** com permissões derivadas do `PersonType` ([`Rol
 - **Funcionário + perguntas:** `GET /questions` filtrado pela escola do aluno do exame.
 - **Professor + correcção:** `EvaluateInboxDto` não expõe dados do aluno; nota/imagem só acessíveis na atribuição do professor autenticado.
 - **Estatísticas:** dashboard (`GET /statistics`) para admin (global) e funcionário (escola); exames por estado, média por disciplina, progresso de correção e volume de revisões; Professores não têm `STATISTICS_READ`.
+- **Auditoria:** `GET /audit-logs` e menu **Auditoria** apenas com `AUDIT_READ` (só administrador). Regista mutações de domínio (CRUD, exames, notas e workflow); append-only.
 - **Aluno:** sem acesso à listagem de pessoas.
 
 ### Testes automatizados

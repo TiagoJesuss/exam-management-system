@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import PeopleView from '@/views/people/PeopleView.vue'
 import StatisticsView from '@/views/statistics/StatisticsView.vue'
+import AuditView from '@/views/audit/AuditView.vue'
 import SchoolsView from '@/views/schools/SchoolsView.vue'
 import SubjectsView from '@/views/subjects/SubjectsView.vue'
 import ExamUploadView from '@/views/exams/ExamUploadView.vue'
@@ -39,6 +40,12 @@ const router = createRouter({
       name: 'statistics',
       component: StatisticsView,
       meta: { permission: 'STATISTICS_READ' }
+    },
+    {
+      path: '/audit',
+      name: 'audit',
+      component: AuditView,
+      meta: { permission: 'AUDIT_READ' }
     },
     {
       path: '/schools',

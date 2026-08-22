@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.domain.AuditAction;
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.service.AuditService;
 import pt.ulisboa.tecnico.rnl.dei.ems.evaluate.domain.Evaluate;
 import pt.ulisboa.tecnico.rnl.dei.ems.evaluate.domain.Evaluate.EvaluateState;
 import pt.ulisboa.tecnico.rnl.dei.ems.evaluate.domain.Evaluate.EvaluateType;
@@ -38,6 +40,9 @@ public class EvaluateService {
 
 	@Autowired
 	private ReviewRequestRepository reviewRequestRepository;
+
+	@Autowired
+	private AuditService auditService;
 
 	@Transactional(readOnly = true)
 	public List<EvaluateInboxDto> getMyInbox() {
@@ -86,6 +91,12 @@ public class EvaluateService {
 			throw new DEIException(ErrorMessage.EVALUATE_GRADE_INVALID, String.valueOf(maxScore));
 		}
 
+		Double oldGrade = evaluate.getGrade();
+		Person professor = evaluate.getProfessor();
+		long questionId = evaluate.getQuestion().getId();
+		long examId = evaluate.getQuestion().getExam().getId();
+		int questionNumber = evaluate.getQuestion().getNumber();
+
 		evaluate.setGrade(grade);
 		evaluate.setState(EvaluateState.GRADED);
 		if (evaluate.getType() == EvaluateType.INITIAL) {
@@ -93,6 +104,22 @@ public class EvaluateService {
 		} else if (evaluate.getType() == EvaluateType.REVIEW) {
 			tryCompleteReviewExam(evaluate.getQuestion().getExam());
 		}
+
+		String oldLabel = oldGrade != null ? oldGrade.toString() : "—";
+		String message = String.format(
+				"Professor %s alterou a nota do fragmento %d (exame %d) de %s para %s.",
+				professor.getName(),
+				questionNumber,
+				examId,
+				oldLabel,
+				grade);
+		auditService.log(
+				AuditAction.GRADE_SUBMITTED,
+				message,
+				"Evaluate",
+				evaluate.getId(),
+				"questionId=" + questionId + ";oldGrade=" + oldLabel + ";newGrade=" + grade);
+
 		return toDto(evaluate);
 	}
 

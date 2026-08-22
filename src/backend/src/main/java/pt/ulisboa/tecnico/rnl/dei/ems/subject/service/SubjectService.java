@@ -1,11 +1,15 @@
 package pt.ulisboa.tecnico.rnl.dei.ems.subject.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.domain.AuditAction;
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.service.AuditService;
 import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.DEIException;
 import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.ErrorMessage;
 import pt.ulisboa.tecnico.rnl.dei.ems.subject.domain.Subject;
@@ -19,6 +23,9 @@ public class SubjectService {
 
 	@Autowired
 	private SubjectRepository subjectRepository;
+
+	@Autowired
+	private AuditService auditService;
 
 	private Subject fetchSubjectOrThrow(long id) {
 		return subjectRepository.findById(id)
@@ -43,7 +50,14 @@ public class SubjectService {
 		Subject subject = new Subject(
 				subjectDto.name(),
 				subjectDto.code());
-		return new SubjectDto(subjectRepository.save(subject));
+		Subject saved = subjectRepository.save(subject);
+		auditService.log(
+				AuditAction.SUBJECT_CREATED,
+				"Criou a disciplina " + saved.getCode() + ".",
+				"Subject",
+				saved.getId(),
+				null);
+		return new SubjectDto(saved);
 	}
 
 	@Transactional
@@ -60,11 +74,31 @@ public class SubjectService {
 		}
 
 		Subject subject = fetchSubjectOrThrow(id);
+		String oldName = subject.getName();
+		String oldCode = subject.getCode();
 
 		subject.setCode(subjectDto.code());
 		subject.setName(subjectDto.name());
+		Subject saved = subjectRepository.save(subject);
 
-		return new SubjectDto(subjectRepository.save(subject));
+		List<String> changed = new ArrayList<>();
+		if (!Objects.equals(oldName, saved.getName())) {
+			changed.add("nome");
+		}
+		if (!Objects.equals(oldCode, saved.getCode())) {
+			changed.add("código");
+		}
+
+		if (!changed.isEmpty()) {
+			auditService.log(
+					AuditAction.SUBJECT_UPDATED,
+					"Editou a disciplina " + saved.getCode() + ": " + String.join(", ", changed) + ".",
+					"Subject",
+					saved.getId(),
+					null);
+		}
+
+		return new SubjectDto(saved);
 	}
 
 	private void validateSubjectFields(SubjectDto subjectDto) {
@@ -76,8 +110,14 @@ public class SubjectService {
 
 	@Transactional
 	public void deleteSubject(long id) {
-		fetchSubjectOrThrow(id); // ensure exists
-
+		Subject subject = fetchSubjectOrThrow(id);
+		String code = subject.getCode();
 		subjectRepository.deleteById(id);
+		auditService.log(
+				AuditAction.SUBJECT_DELETED,
+				"Apagou a disciplina " + code + " (id " + id + ").",
+				"Subject",
+				id,
+				null);
 	}
 }

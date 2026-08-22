@@ -13,4 +13,5 @@ export const navItems: NavItem[] = [
   { name: 'As minhas provas', path: '/my-exams', icon: 'mdi-file-eye', permission: 'EXAM_CONSULT' },
   { name: 'Correcções', path: '/grading', icon: 'mdi-clipboard-check', permission: 'EVALUATE_READ' },
   { name: 'Estatísticas', path: '/statistics', icon: 'mdi-chart-bar', permission: 'STATISTICS_READ' },
+  { name: 'Auditoria', path: '/audit', icon: 'mdi-shield-search', permission: 'AUDIT_READ' },
 ]

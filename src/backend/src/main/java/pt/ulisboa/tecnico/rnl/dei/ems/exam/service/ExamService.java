@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.domain.AuditAction;
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.service.AuditService;
 import pt.ulisboa.tecnico.rnl.dei.ems.evaluate.domain.Evaluate;
 import pt.ulisboa.tecnico.rnl.dei.ems.evaluate.domain.Evaluate.EvaluateType;
 import pt.ulisboa.tecnico.rnl.dei.ems.evaluate.repository.EvaluateRepository;
@@ -75,6 +77,9 @@ public class ExamService {
 
 	@Autowired
 	private ReviewRequestRepository reviewRequestRepository;
+
+	@Autowired
+	private AuditService auditService;
 
 	@Value("${ems.uploads.dir:uploads}")
 	private String uploadsDir;
@@ -238,6 +243,12 @@ public class ExamService {
 			for (Exam exam : exams) {
 				exam.setState(ExamState.REVIEW_GRADING);
 			}
+			auditService.log(
+					AuditAction.REVIEW_DISTRIBUTED,
+					"Distribuiu 0 pedido(s) de revisão para correcção.",
+					"Exam",
+					null,
+					"examCount=" + exams.size() + ";requestCount=0");
 			return;
 		}
 
@@ -283,6 +294,12 @@ public class ExamService {
 			exam.setState(ExamState.REVIEW_GRADING);
 		}
 
+		auditService.log(
+				AuditAction.REVIEW_DISTRIBUTED,
+				"Distribuiu " + pending.size() + " pedido(s) de revisão para correcção.",
+				"Exam",
+				null,
+				"examCount=" + exams.size() + ";requestCount=" + pending.size());
 	}
 
 	private List<Person> pickReviewCandidates(
@@ -330,11 +347,23 @@ public class ExamService {
 			throw new DEIException(ErrorMessage.EXAM_PUBLISH_NOT_ALL_GRADED);
 		}
 
-		return scoped.stream()
+		List<ExamDto> published = scoped.stream()
 				.filter(exam -> exam.getState() == ExamState.GRADED)
 				.peek(this::applyPublishGrades)
 				.map(ExamDto::new)
 				.toList();
+
+		String schoolLabel = school != null ? school.getCode() : "todas";
+		String subjectLabel = subject != null ? subject.getCode() : "todas";
+		auditService.log(
+				AuditAction.GRADES_PUBLISHED,
+				"Publicou notas de " + published.size() + " exame(s) (escola=" + schoolLabel
+						+ ", disciplina=" + subjectLabel + ").",
+				"Exam",
+				null,
+				"count=" + published.size());
+
+		return published;
 	}
 
 	@Transactional
@@ -347,6 +376,12 @@ public class ExamService {
 		}
 
 		applyPdfRelease(exam);
+		auditService.log(
+				AuditAction.EXAM_RELEASED,
+				"Disponibilizou a prova do exame " + exam.getId() + ".",
+				"Exam",
+				exam.getId(),
+				null);
 		return new ExamDto(exam);
 	}
 
@@ -379,6 +414,13 @@ public class ExamService {
 				.map(ExamDto::new)
 				.toList();
 
+		auditService.log(
+				AuditAction.EXAM_RELEASED,
+				"Disponibilizou " + released.size() + " prova(s) em lote (escola="
+						+ school.getCode() + ", disciplina=" + subject.getCode() + ").",
+				"Exam",
+				null,
+				"count=" + released.size());
 
 		return released;
 	}
@@ -417,9 +459,16 @@ public class ExamService {
 				.filter(exam -> exam.getState() == ExamState.SEGMENTED)
 				.peek(exam -> exam.setState(ExamState.LOCKED))
 				.toList();
-		return examRepository.saveAll(locked).stream()
+		List<ExamDto> result = examRepository.saveAll(locked).stream()
 				.map(ExamDto::new)
 				.toList();
+		auditService.log(
+				AuditAction.EXAMS_LOCKED,
+				"Bloqueou " + result.size() + " exame(s) segmentado(s).",
+				"Exam",
+				null,
+				"count=" + result.size());
+		return result;
 	}
 
 	@Transactional
@@ -493,7 +542,15 @@ public class ExamService {
 		}
 		examRepository.saveAll(lockedExams);
 
-		return new DistributionResultDto(assignedCount, forcedSameSchoolCount);
+		DistributionResultDto result = new DistributionResultDto(assignedCount, forcedSameSchoolCount);
+		auditService.log(
+				AuditAction.EXAMS_DISTRIBUTED,
+				"Distribuiu " + assignedCount + " fragmento(s) de "
+						+ lockedExams.size() + " exame(s) bloqueado(s).",
+				"Exam",
+				null,
+				"assigned=" + assignedCount + ";forcedSameSchool=" + forcedSameSchoolCount);
+		return result;
 	}
 
 	private boolean isPreferredTeacher(Person teacher, Person student) {
@@ -637,7 +694,15 @@ public class ExamService {
 
 		String path = storePdf(file, studentId, subjectCode);
 		Exam exam = new Exam(student, subject, path);
-		return new ExamDto(examRepository.save(exam));
+		Exam saved = examRepository.save(exam);
+		auditService.log(
+				AuditAction.EXAM_UPLOADED,
+				"Carregou exame " + saved.getId() + " do aluno " + student.getName()
+						+ " na disciplina " + subject.getCode() + ".",
+				"Exam",
+				saved.getId(),
+				null);
+		return new ExamDto(saved);
 	}
 
 	@Transactional
@@ -669,7 +734,14 @@ public class ExamService {
 
 		boolean submissionsClosed = areSubmissionsLocked();
 		exam.setState(submissionsClosed ? ExamState.LOCKED : ExamState.SEGMENTED);
-		return new ExamDto(examRepository.save(exam));
+		Exam saved = examRepository.save(exam);
+		auditService.log(
+				AuditAction.EXAM_SEGMENTED,
+				"Segmentou o exame " + saved.getId() + " em " + files.length + " pergunta(s).",
+				"Exam",
+				saved.getId(),
+				"questionCount=" + files.length);
+		return new ExamDto(saved);
 	}
 
 	private QuestionType parseQuestionType(String raw) {

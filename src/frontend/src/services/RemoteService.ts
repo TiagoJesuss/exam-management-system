@@ -11,6 +11,7 @@ import type ExamConsultationDto from '@/models/ExamConsultationDto'
 import type EvaluateInboxDto from '@/models/EvaluateInboxDto'
 import type ReviewRequestDto from '@/models/ReviewRequestDto'
 import type StatisticsDashboardDto from '@/models/StatisticsDashboardDto'
+import type AuditLogDto from '@/models/AuditLogDto'
 import type AuthUser from '@/models/AuthUser'
 
 const httpClient = axios.create()
@@ -206,6 +207,11 @@ export default class RemoteServices {
   // --- Statistics ---
   static async getStatistics(): Promise<StatisticsDashboardDto> {
     return httpClient.get('/statistics')
+  }
+
+  // --- Audit ---
+  static async getAuditLogs(): Promise<AuditLogDto[]> {
+    return httpClient.get('/audit-logs')
   }
 
   // --- Authentication ---

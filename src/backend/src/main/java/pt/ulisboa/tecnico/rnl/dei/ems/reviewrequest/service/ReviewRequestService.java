@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.domain.AuditAction;
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.service.AuditService;
 import pt.ulisboa.tecnico.rnl.dei.ems.exam.domain.Exam;
 import pt.ulisboa.tecnico.rnl.dei.ems.exam.domain.Exam.ExamState;
 import pt.ulisboa.tecnico.rnl.dei.ems.exam.repository.ExamRepository;
@@ -33,6 +35,9 @@ public class ReviewRequestService {
 
 	@Autowired
 	private QuestionRepository questionRepository;
+
+	@Autowired
+	private AuditService auditService;
 
 	@Transactional(readOnly = true)
 	public List<ReviewRequestDto> listForExam(long examId) {
@@ -65,6 +70,20 @@ public class ReviewRequestService {
 		}
 
 		ReviewRequest created = reviewRequestRepository.save(new ReviewRequest(question, justification));
+
+		Person student = exam.getStudent();
+		String message = String.format(
+				"Aluno %s pediu revisão da pergunta %d do exame %d.",
+				student.getName(),
+				question.getNumber(),
+				exam.getId());
+		auditService.log(
+				AuditAction.REVIEW_REQUESTED,
+				message,
+				"ReviewRequest",
+				created.getId(),
+				"questionId=" + question.getId());
+
 		return new ReviewRequestDto(created);
 	}
 

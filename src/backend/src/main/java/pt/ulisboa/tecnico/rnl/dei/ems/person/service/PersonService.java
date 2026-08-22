@@ -1,12 +1,16 @@
 package pt.ulisboa.tecnico.rnl.dei.ems.person.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.domain.AuditAction;
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.service.AuditService;
 import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.DEIException;
 import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.ErrorMessage;
 import pt.ulisboa.tecnico.rnl.dei.ems.person.domain.Person;
@@ -35,6 +39,9 @@ public class PersonService {
 
 	@Autowired
 	private SubjectRepository subjectRepository;
+
+	@Autowired
+	private AuditService auditService;
 
 	private Person fetchPersonOrThrow(long id) {
 		return personRepository.findById(id)
@@ -67,7 +74,14 @@ public class PersonService {
 
 		applySchoolAndSubject(person, personDto);
 
-		return new PersonDto(personRepository.save(person));
+		Person saved = personRepository.save(person);
+		auditService.log(
+				AuditAction.PERSON_CREATED,
+				"Criou a pessoa " + saved.getName() + " (" + saved.getType().name() + ").",
+				"Person",
+				saved.getId(),
+				null);
+		return new PersonDto(saved);
 	}
 
 	@Transactional(readOnly = true)
@@ -101,18 +115,58 @@ public class PersonService {
 		validatePersonFields(personDto, false);
 		assertStaffCanManageStudent(person, personDto);
 
+		String oldName = person.getName();
+		String oldEmail = person.getEmail();
+		PersonType oldType = person.getType();
+		String oldSchoolCode = person.getSchool() != null ? person.getSchool().getCode() : null;
+		String oldSubjectCode = person.getSubject() != null ? person.getSubject().getCode() : null;
+		boolean passwordProvided = personDto.password() != null && !personDto.password().isBlank();
+
 		person.setName(personDto.name());
 		person.setType(parsePersonType(personDto.type()));
 		if (personRepository.existsByEmail(personDto.email()) && !person.getEmail().equals(personDto.email())) {
 			throw new DEIException(ErrorMessage.PERSON_ALREADY_EXISTS, personDto.email());
 		}
 		person.setEmail(personDto.email());
-		if (personDto.password() != null && !personDto.password().isBlank()) {
+		if (passwordProvided) {
 			person.setPassword(passwordEncoder.encode(personDto.password()));
 		}
 		applySchoolAndSubject(person, personDto);
 
-		return new PersonDto(personRepository.save(person));
+		Person saved = personRepository.save(person);
+
+		List<String> changed = new ArrayList<>();
+		if (!Objects.equals(oldName, saved.getName())) {
+			changed.add("nome");
+		}
+		if (!Objects.equals(oldEmail, saved.getEmail())) {
+			changed.add("email");
+		}
+		if (oldType != saved.getType()) {
+			changed.add("tipo");
+		}
+		String newSchoolCode = saved.getSchool() != null ? saved.getSchool().getCode() : null;
+		if (!Objects.equals(oldSchoolCode, newSchoolCode)) {
+			changed.add("escola");
+		}
+		String newSubjectCode = saved.getSubject() != null ? saved.getSubject().getCode() : null;
+		if (!Objects.equals(oldSubjectCode, newSubjectCode)) {
+			changed.add("disciplina");
+		}
+		if (passwordProvided) {
+			changed.add("password");
+		}
+
+		if (!changed.isEmpty()) {
+			auditService.log(
+					AuditAction.PERSON_UPDATED,
+					"Editou a pessoa " + saved.getName() + ": " + String.join(", ", changed) + ".",
+					"Person",
+					saved.getId(),
+					null);
+		}
+
+		return new PersonDto(saved);
 	}
 
 	private void validatePersonFields(PersonDto personDto, boolean requirePassword) {
@@ -199,8 +253,14 @@ public class PersonService {
 
 	@Transactional
 	public void deletePerson(long id) {
-		fetchPersonOrThrow(id); // ensure exists
-
+		Person person = fetchPersonOrThrow(id);
+		String name = person.getName();
 		personRepository.deleteById(id);
+		auditService.log(
+				AuditAction.PERSON_DELETED,
+				"Apagou a pessoa " + name + " (id " + id + ").",
+				"Person",
+				id,
+				null);
 	}
 }

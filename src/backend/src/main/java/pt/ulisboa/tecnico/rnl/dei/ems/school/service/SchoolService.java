@@ -1,11 +1,15 @@
 package pt.ulisboa.tecnico.rnl.dei.ems.school.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.domain.AuditAction;
+import pt.ulisboa.tecnico.rnl.dei.ems.audit.service.AuditService;
 import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.DEIException;
 import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.ErrorMessage;
 import pt.ulisboa.tecnico.rnl.dei.ems.school.domain.School;
@@ -19,6 +23,9 @@ public class SchoolService {
 
 	@Autowired
 	private SchoolRepository schoolRepository;
+
+	@Autowired
+	private AuditService auditService;
 
 	private School fetchSchoolOrThrow(long id) {
 		return schoolRepository.findById(id)
@@ -44,7 +51,14 @@ public class SchoolService {
 				schoolDto.name(),
 				schoolDto.region(),
 				schoolDto.code());
-		return new SchoolDto(schoolRepository.save(school));
+		School saved = schoolRepository.save(school);
+		auditService.log(
+				AuditAction.SCHOOL_CREATED,
+				"Criou a escola " + saved.getCode() + ".",
+				"School",
+				saved.getId(),
+				null);
+		return new SchoolDto(saved);
 	}
 
 	@Transactional
@@ -61,11 +75,36 @@ public class SchoolService {
 		}
 
 		School school = fetchSchoolOrThrow(id);
+		String oldName = school.getName();
+		String oldRegion = school.getRegion();
+		String oldCode = school.getCode();
 
 		school.setName(schoolDto.name());
 		school.setRegion(schoolDto.region());
 		school.setCode(schoolDto.code());
-		return new SchoolDto(schoolRepository.save(school));
+		School saved = schoolRepository.save(school);
+
+		List<String> changed = new ArrayList<>();
+		if (!Objects.equals(oldName, saved.getName())) {
+			changed.add("nome");
+		}
+		if (!Objects.equals(oldRegion, saved.getRegion())) {
+			changed.add("região");
+		}
+		if (!Objects.equals(oldCode, saved.getCode())) {
+			changed.add("código");
+		}
+
+		if (!changed.isEmpty()) {
+			auditService.log(
+					AuditAction.SCHOOL_UPDATED,
+					"Editou a escola " + saved.getCode() + ": " + String.join(", ", changed) + ".",
+					"School",
+					saved.getId(),
+					null);
+		}
+
+		return new SchoolDto(saved);
 	}
 
 	private void validateSchoolFields(SchoolDto schoolDto) {
@@ -78,8 +117,14 @@ public class SchoolService {
 
 	@Transactional
 	public void deleteSchool(long id) {
-		fetchSchoolOrThrow(id); // ensure exists
-
+		School school = fetchSchoolOrThrow(id);
+		String code = school.getCode();
 		schoolRepository.deleteById(id);
+		auditService.log(
+				AuditAction.SCHOOL_DELETED,
+				"Apagou a escola " + code + " (id " + id + ").",
+				"School",
+				id,
+				null);
 	}
 }
