@@ -90,13 +90,17 @@ const uploading = ref(false)
 const examId = ref<number | null>(null)
 
 onMounted(async () => {
-  const people = await RemoteService.getPeople()
-  students.value = people.filter((p) => {
-    if (p.type !== 'STUDENT') return false
-    if (auth.user?.schoolCode && p.schoolCode !== auth.user.schoolCode) return false
-    return true
-  })
-  subjects.value = await RemoteService.getSubjects()
+  try {
+    const people = await RemoteService.getPeople()
+    students.value = people.filter((p) => {
+      if (p.type !== 'STUDENT') return false
+      if (auth.user?.schoolCode && p.schoolCode !== auth.user.schoolCode) return false
+      return true
+    })
+    subjects.value = await RemoteService.getSubjects()
+  } catch {
+    // Erro apresentado pelo alerta global.
+  }
 })
 
 const studentOptions = computed(() =>
@@ -135,6 +139,8 @@ const upload = async () => {
     subjectCode.value = ''
     file.value = null
     examId.value = exam.id ?? null
+  } catch {
+    // Erro apresentado pelo alerta global.
   } finally {
     uploading.value = false
   }

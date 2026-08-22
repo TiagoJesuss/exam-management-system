@@ -122,7 +122,7 @@ async function loadPdf() {
     }
     pages.value = rendered
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : 'Não foi possível carregar o PDF.'
+    error.value = RemoteService.consumeError(e)
   } finally {
     loading.value = false
   }
@@ -150,7 +150,7 @@ async function confirm() {
     emit('segmented')
     await router.push({ name: 'exams' })
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : 'Não foi possível confirmar a segmentação.'
+    error.value = RemoteService.consumeError(e)
   } finally {
     confirming.value = false
   }

@@ -22,13 +22,14 @@
         <v-card-actions>
           <v-spacer></v-spacer>
 
-          <v-btn text="Close" variant="plain" @click="dialog = false"></v-btn>
+          <v-btn text="Fechar" variant="plain" @click="dialog = false"></v-btn>
 
           <v-btn
             color="primary"
-            text="Save"
+            text="Guardar"
             :variant="isFormValid ? 'flat' : 'tonal'"
-            :disabled="!isFormValid"
+            :disabled="!isFormValid || saving"
+            :loading="saving"
             @click="saveSubject"
           ></v-btn>
         </v-card-actions>
@@ -43,6 +44,7 @@ import type SubjectDto from '@/models/SubjectDto'
 import RemoteService from '@/services/RemoteService'
 
 const dialog = ref(false)
+const saving = ref(false)
 
 const emit = defineEmits(['subject-created'])
 
@@ -52,9 +54,16 @@ const newSubject = ref<SubjectDto>({
 })
 
 const saveSubject = async () => {
-  await RemoteService.createSubject(newSubject.value)
-  dialog.value = false
-  emit('subject-created')
+  saving.value = true
+  try {
+    await RemoteService.createSubject(newSubject.value)
+    dialog.value = false
+    emit('subject-created')
+  } catch {
+    // Erro apresentado pelo alerta global.
+  } finally {
+    saving.value = false
+  }
 }
 
 const isFormValid = computed(() => {

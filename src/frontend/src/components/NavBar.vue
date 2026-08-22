@@ -1,5 +1,9 @@
 <template>
   <v-app-bar>
+    <v-btn to="/" :active="false">
+      Início
+      <v-icon color="contrast" icon="mdi-home"></v-icon>
+    </v-btn>
     <v-spacer></v-spacer>
     <v-btn v-for="item in navbarItems" :key="item.name" :to="item.path">
       {{ item.name }}

@@ -1,7 +1,7 @@
 <template>
   <v-dialog v-model="show">
     <v-alert v-model="show" type="error" closable close-text="Fechar alerta">
-      {{ appearanceStore.currentErrorMessage ?? '??' }}
+      {{ appearanceStore.currentErrorMessage ?? 'Ocorreu um erro.' }}
     </v-alert>
   </v-dialog>
 </template>

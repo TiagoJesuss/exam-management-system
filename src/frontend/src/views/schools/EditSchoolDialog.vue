@@ -12,13 +12,14 @@
       <v-card-actions>
         <v-spacer></v-spacer>
 
-        <v-btn text="Close" variant="plain" @click="dialog = false"></v-btn>
+        <v-btn text="Fechar" variant="plain" @click="dialog = false"></v-btn>
 
         <v-btn
           color="primary"
-          text="Save"
+          text="Guardar"
           :variant="isFormValid ? 'flat' : 'tonal'"
-          :disabled="!isFormValid"
+          :disabled="!isFormValid || saving"
+          :loading="saving"
           @click="saveSchool"
         ></v-btn>
       </v-card-actions>
@@ -32,6 +33,7 @@ import type SchoolDto from '@/models/SchoolDto'
 import RemoteService from '@/services/RemoteService'
 
 const emit = defineEmits(['school-updated'])
+const saving = ref(false)
 
 const editedSchool = ref<SchoolDto>({
   name: '',
@@ -60,9 +62,16 @@ watch(
 )
 
 const saveSchool = async () => {
-  await RemoteService.updateSchool(editedSchool.value.id!, editedSchool.value)
-  emit('school-updated')
-  dialog.value = false
+  saving.value = true
+  try {
+    await RemoteService.updateSchool(editedSchool.value.id!, editedSchool.value)
+    emit('school-updated')
+    dialog.value = false
+  } catch {
+    // Erro apresentado pelo alerta global.
+  } finally {
+    saving.value = false
+  }
 }
 
 const isFormValid = computed(() => {

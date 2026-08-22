@@ -16,7 +16,7 @@
 
   <v-text-field
     v-model="search"
-    label="Search"
+    label="Pesquisar"
     prepend-inner-icon="mdi-magnify"
     variant="outlined"
     hide-details
@@ -61,7 +61,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 
-const schools = reactive([])
+const schools = reactive<SchoolDto[]>([])
 
 let search = ref('')
 let loading = ref(true)
@@ -75,10 +75,15 @@ const headers = [
 
 getSchools()
 async function getSchools() {
-  schools.splice(0, schools.length)
-  schools.push(...(await RemoteService.getSchools()))
-  loading.value = false
-  console.log(schools)
+  loading.value = true
+  try {
+    schools.splice(0, schools.length)
+    schools.push(...(await RemoteService.getSchools()))
+  } catch {
+    // Erro apresentado pelo alerta global.
+  } finally {
+    loading.value = false
+  }
 }
 
 const editSchool = (school: SchoolDto) => {
@@ -89,8 +94,12 @@ const editSchool = (school: SchoolDto) => {
 const deleteSchool = async (school: SchoolDto) => {
   const ok = confirm(`Apagar ${school.name}?`)
   if (!ok) return
-  await RemoteService.deleteSchool(school.id!)
-  await getSchools()
+  try {
+    await RemoteService.deleteSchool(school.id!)
+    await getSchools()
+  } catch {
+    // Erro apresentado pelo alerta global.
+  }
 }
 
 

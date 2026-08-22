@@ -34,6 +34,8 @@ public class SchoolService {
 
 	@Transactional
 	public SchoolDto createSchool(SchoolDto schoolDto) {
+		validateSchoolFields(schoolDto);
+
 		if (schoolRepository.existsByCode(schoolDto.code())) {
 			throw new DEIException(ErrorMessage.SCHOOL_ALREADY_EXISTS, schoolDto.code());
 		}
@@ -52,6 +54,8 @@ public class SchoolService {
 
 	@Transactional
 	public SchoolDto updateSchool(long id, SchoolDto schoolDto) {
+		validateSchoolFields(schoolDto);
+
 		if (schoolRepository.existsByCode(schoolDto.code()) && schoolRepository.findByCode(schoolDto.code()).get().getId() != id) {
 			throw new DEIException(ErrorMessage.SCHOOL_ALREADY_EXISTS, schoolDto.code());
 		}
@@ -62,6 +66,14 @@ public class SchoolService {
 		school.setRegion(schoolDto.region());
 		school.setCode(schoolDto.code());
 		return new SchoolDto(schoolRepository.save(school));
+	}
+
+	private void validateSchoolFields(SchoolDto schoolDto) {
+		if (schoolDto.name() == null || schoolDto.name().isBlank()
+				|| schoolDto.code() == null || schoolDto.code().isBlank()
+				|| schoolDto.region() == null || schoolDto.region().isBlank()) {
+			throw new DEIException(ErrorMessage.SCHOOL_FIELDS_NOT_VALID);
+		}
 	}
 
 	@Transactional

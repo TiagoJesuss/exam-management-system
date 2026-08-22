@@ -34,6 +34,8 @@ public class SubjectService {
 
 	@Transactional
 	public SubjectDto createSubject(SubjectDto subjectDto) {
+		validateSubjectFields(subjectDto);
+
 		if (subjectRepository.existsByCode(subjectDto.code())) {
 			throw new DEIException(ErrorMessage.SUBJECT_ALREADY_EXISTS, subjectDto.code());
 		}
@@ -51,6 +53,8 @@ public class SubjectService {
 
 	@Transactional
 	public SubjectDto updateSubject(long id, SubjectDto subjectDto) {
+		validateSubjectFields(subjectDto);
+
 		if (subjectRepository.existsByCode(subjectDto.code()) && subjectRepository.findByCode(subjectDto.code()).get().getId() != id) {
 			throw new DEIException(ErrorMessage.SUBJECT_ALREADY_EXISTS, subjectDto.code());
 		}
@@ -61,6 +65,13 @@ public class SubjectService {
 		subject.setName(subjectDto.name());
 
 		return new SubjectDto(subjectRepository.save(subject));
+	}
+
+	private void validateSubjectFields(SubjectDto subjectDto) {
+		if (subjectDto.name() == null || subjectDto.name().isBlank()
+				|| subjectDto.code() == null || subjectDto.code().isBlank()) {
+			throw new DEIException(ErrorMessage.SUBJECT_FIELDS_NOT_VALID);
+		}
 	}
 
 	@Transactional

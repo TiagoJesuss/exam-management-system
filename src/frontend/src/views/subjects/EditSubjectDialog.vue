@@ -11,13 +11,14 @@
       <v-card-actions>
         <v-spacer></v-spacer>
 
-        <v-btn text="Close" variant="plain" @click="dialog = false"></v-btn>
+        <v-btn text="Fechar" variant="plain" @click="dialog = false"></v-btn>
 
         <v-btn
           color="primary"
-          text="Save"
+          text="Guardar"
           :variant="isFormValid ? 'flat' : 'tonal'"
-          :disabled="!isFormValid"
+          :disabled="!isFormValid || saving"
+          :loading="saving"
           @click="saveSubject"
         ></v-btn>
       </v-card-actions>
@@ -31,6 +32,7 @@ import type SubjectDto from '@/models/SubjectDto'
 import RemoteService from '@/services/RemoteService'
 
 const emit = defineEmits(['subject-updated'])
+const saving = ref(false)
 
 const editedSubject = ref<SubjectDto>({
   name: '',
@@ -57,9 +59,16 @@ watch(
 )
 
 const saveSubject = async () => {
-  await RemoteService.updateSubject(editedSubject.value.id!, editedSubject.value)
-  emit('subject-updated')
-  dialog.value = false
+  saving.value = true
+  try {
+    await RemoteService.updateSubject(editedSubject.value.id!, editedSubject.value)
+    emit('subject-updated')
+    dialog.value = false
+  } catch {
+    // Erro apresentado pelo alerta global.
+  } finally {
+    saving.value = false
+  }
 }
 
 const isFormValid = computed(() => {

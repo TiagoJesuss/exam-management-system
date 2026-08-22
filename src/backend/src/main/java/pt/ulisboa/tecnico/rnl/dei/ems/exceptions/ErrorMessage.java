@@ -36,6 +36,29 @@ public enum ErrorMessage {
 	EVALUATE_NOT_GRADABLE("A atribuição de correção não está num estado que permita classificar.", 1032),
 	EVALUATE_GRADE_INVALID("A nota deve estar entre 0 e a cotação máxima (%s).", 1033),
 	QUESTION_FILE_MISSING("A imagem da pergunta não foi encontrada.", 1034),
+	EXAM_NOT_GRADED_FOR_RELEASE(
+			"O exame tem de ter as notas publicadas (GRADES_PUBLISHED) para ser disponibilizado.",
+			1035),
+	EXAM_RELEASE_FILTERS_REQUIRED("É necessário indicar a escola e a disciplina para disponibilizar em lote.", 1036),
+	EXAM_NOT_OPEN_FOR_CONSULTATION("A prova ainda não está disponível para consulta.", 1037),
+	EXAM_NOT_PUBLISHED_FOR_RELEASE("O exame tem de ter as notas publicadas para disponibilizar a prova.", 1038),
+	EXAM_PUBLISH_SCHOOL_REQUIRED("É necessário indicar a escola para publicar as notas.", 1039),
+	EXAM_PUBLISH_SUBJECT_REQUIRED("É necessário indicar a disciplina para publicar as notas.", 1040),
+	EXAM_PUBLISH_NOT_ALL_GRADED(
+			"Só é possível publicar notas quando todos os exames da escola e disciplina estão corrigidos.",
+			1041),
+	EXAM_CONSULTATION_REQUEST_INVALID(
+			"Só é possível pedir a prova quando as notas estão publicadas e a prova ainda não foi disponibilizada.",
+			1042),
+	REVIEW_REQUEST_NOT_ALLOWED(
+			"Só é possível pedir revisão com a prova disponibilizada e dentro do prazo.",
+			1043),
+	REVIEW_REQUEST_ALREADY_EXISTS("Já existe um pedido de revisão para esta pergunta.", 1044),
+	REVIEW_JUSTIFICATION_REQUIRED("A justificação do pedido de revisão é obrigatória.", 1045),
+	NO_SUCH_QUESTION_ON_EXAM("Não existe a pergunta %s neste exame.", 1046),
+	REQUEST_BODY_INVALID("O pedido enviado é inválido.", 1047),
+	SCHOOL_FIELDS_NOT_VALID("O nome, código e região da escola são obrigatórios.", 1048),
+	SUBJECT_FIELDS_NOT_VALID("O nome e código da disciplina são obrigatórios.", 1049),
 
 	INVALID_CREDENTIALS("Email ou palavra-passe inválidos.", 2001),
 	CANNOT_IMPERSONATE_SELF("Não é possível personificar a própria conta.", 2002),

@@ -34,6 +34,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import RemoteService from '@/services/RemoteService'
 
 const appName = import.meta.env.VITE_NAME
 
@@ -53,8 +54,8 @@ const onSubmit = async () => {
     await auth.login(email.value, password.value)
     const redirect = route.query.redirect as string | undefined
     router.push(redirect ?? { name: 'home' })
-  } catch (e: any) {
-    error.value = e?.message ?? 'Falha na autenticação.'
+  } catch (e: unknown) {
+    error.value = RemoteService.consumeError(e)
   } finally {
     loading.value = false
   }
