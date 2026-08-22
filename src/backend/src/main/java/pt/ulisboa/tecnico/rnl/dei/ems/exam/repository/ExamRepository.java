@@ -16,5 +16,7 @@ import pt.ulisboa.tecnico.rnl.dei.ems.exam.domain.Exam.ExamState;
 @Transactional
 public interface ExamRepository extends JpaRepository<Exam, Long> {
 	List<Exam> findByStudent_IdAndStateIn(long studentId, Collection<ExamState> states);
+
+	boolean existsByStudent_IdAndSubject_Id(long studentId, long subjectId);
 }
 

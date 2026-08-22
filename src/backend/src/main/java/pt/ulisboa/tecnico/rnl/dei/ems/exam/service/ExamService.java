@@ -604,6 +604,10 @@ public class ExamService {
 		Subject subject = subjectRepository.findByCode(subjectCode)
 				.orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_SUBJECT, subjectCode));
 
+		if (examRepository.existsByStudent_IdAndSubject_Id(student.getId(), subject.getId())) {
+			throw new DEIException(ErrorMessage.EXAM_ALREADY_EXISTS_FOR_STUDENT_SUBJECT, subjectCode);
+		}
+
 		String path = storePdf(file, studentId, subjectCode);
 		Exam exam = new Exam(student, subject, path);
 		return new ExamDto(examRepository.save(exam));

@@ -59,6 +59,9 @@ public enum ErrorMessage {
 	REQUEST_BODY_INVALID("O pedido enviado é inválido.", 1047),
 	SCHOOL_FIELDS_NOT_VALID("O nome, código e região da escola são obrigatórios.", 1048),
 	SUBJECT_FIELDS_NOT_VALID("O nome e código da disciplina são obrigatórios.", 1049),
+	EXAM_ALREADY_EXISTS_FOR_STUDENT_SUBJECT(
+			"Já existe um exame deste aluno para a disciplina %s.",
+			1050),
 
 	INVALID_CREDENTIALS("Email ou palavra-passe inválidos.", 2001),
 	CANNOT_IMPERSONATE_SELF("Não é possível personificar a própria conta.", 2002),
