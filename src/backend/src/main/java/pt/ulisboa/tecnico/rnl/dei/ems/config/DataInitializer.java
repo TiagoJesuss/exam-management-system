@@ -25,6 +25,10 @@ import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.ErrorMessage;
  *   staff@dei.tecnico.ulisboa.pt   / staff123     (SCHOOL_STAFF)
  *   teacher@dei.tecnico.ulisboa.pt / teacher123   (TEACHER)
  *   student@dei.tecnico.ulisboa.pt / student123   (STUDENT)
+ *
+ * Demo exams (one per state, except REVIEW_CLOSED) are seeded by {@link ExamDemoSeeder}.
+ * Useful accounts: aluno6@ (GRADES_PUBLISHED), aluno7@ (RELEASED), aluno8@ (REVIEW_GRADING),
+ * aluno10@ (FINAL); carlos.mendes@ sees IN_GRADING inbox for aluno4@.
  */
 @Component
 public class DataInitializer implements CommandLineRunner {

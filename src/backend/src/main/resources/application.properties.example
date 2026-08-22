@@ -21,5 +21,9 @@ security.jwt.expiration-ms=86400000
 
 ## Exam PDF uploads
 ems.uploads.dir=uploads
+ems.review.deadline-hours=48
+ems.review.close-check-ms=300000
+# true = 9 exames demo (estados); false = só pessoas/escolas (testar workflow)
+ems.seed.demo-exams=true
 spring.servlet.multipart.max-file-size=20MB
 spring.servlet.multipart.max-request-size=20MB
