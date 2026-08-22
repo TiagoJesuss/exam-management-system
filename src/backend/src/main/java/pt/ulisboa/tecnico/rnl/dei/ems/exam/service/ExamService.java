@@ -330,7 +330,12 @@ public class ExamService {
 		}
 
 		EnumSet<ExamState> readyStates = EnumSet.of(
-				ExamState.GRADED, ExamState.GRADES_PUBLISHED, ExamState.RELEASED);
+				ExamState.GRADED,
+				ExamState.GRADES_PUBLISHED,
+				ExamState.RELEASED,
+				ExamState.REVIEW_CLOSED,
+				ExamState.REVIEW_GRADING,
+				ExamState.FINAL);
 
 		Subject subject = subjectFilter;
 		School school = schoolFilter;

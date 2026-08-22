@@ -66,11 +66,14 @@ public class AuditService {
 		if (!impersonating) {
 			return message;
 		}
-		String adminEmail = claims.get(JwtService.CLAIM_IMPERSONATOR_EMAIL, String.class);
-		if (adminEmail == null || adminEmail.isBlank()) {
-			adminEmail = "admin";
+		String adminName = claims.get(JwtService.CLAIM_IMPERSONATOR_NAME, String.class);
+		if (adminName == null || adminName.isBlank()) {
+			adminName = claims.get(JwtService.CLAIM_IMPERSONATOR_EMAIL, String.class);
 		}
-		return message + " (personificado por " + adminEmail + ")";
+		if (adminName == null || adminName.isBlank()) {
+			adminName = "admin";
+		}
+		return message + " (personificado por " + adminName + ")";
 	}
 
 	private Claims parseCurrentTokenClaims() {

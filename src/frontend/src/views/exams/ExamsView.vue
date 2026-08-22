@@ -231,7 +231,14 @@ const canPublishGrades = computed(() => {
   })
   if (scoped.length === 0) return false
 
-  const ready = new Set(['GRADED', 'GRADES_PUBLISHED', 'RELEASED'])
+  const ready = new Set([
+    'GRADED',
+    'GRADES_PUBLISHED',
+    'RELEASED',
+    'REVIEW_CLOSED',
+    'REVIEW_GRADING',
+    'FINAL',
+  ])
   const allReady = scoped.every((e) => e.state != null && ready.has(e.state))
   const hasGraded = scoped.some((e) => e.state === 'GRADED')
   return allReady && hasGraded
@@ -336,7 +343,17 @@ async function loadExams(options?: { skipAdminButtons?: boolean }) {
   try {
     const all = await RemoteService.getExams()
     exams.value = all
-    uploadsLocked.value = all.some((e) => e.state === 'LOCKED' || e.state === 'IN_GRADING')
+    // Keep in sync with ExamService.areSubmissionsLocked mid-cycle states.
+    const midCycle = new Set([
+      'LOCKED',
+      'IN_GRADING',
+      'GRADED',
+      'GRADES_PUBLISHED',
+      'RELEASED',
+      'REVIEW_CLOSED',
+      'REVIEW_GRADING',
+    ])
+    uploadsLocked.value = all.some((e) => midCycle.has(e.state ?? ''))
     if (
       !options?.skipAdminButtons &&
       (auth.hasPermission('EXAM_LOCK') || auth.hasPermission('EXAM_DISTRIBUTE'))
