@@ -128,14 +128,16 @@ Contas úteis para testar fluxos: **aluno6@** (notas publicadas), **aluno7@** (P
 
 ## Decisões de arquitetura
 
-- **Organização backend:** pacotes por domínio (`person`, `school`, `subject`, `exam`, `question`, `evaluate`, `reviewrequest`), cada um com entity, repository, service, controller e DTOs — alinhado com o starter do projecto.
+- **Organização backend:** pacotes por domínio (`person`, `school`, `subject`, `exam`, `question`, `evaluate`, `reviewrequest`, `statistics`), cada um com entity, repository, service, controller e DTOs — alinhado com o starter do projecto.
 - **Autenticação:** JWT stateless; cada `Person` tem um `PersonType` que mapeia para permissões em `RolePermissions`. O frontend consulta `auth.hasPermission()` para mostrar rotas e acções.
 - **Autorização:** anotações `@PreAuthorize` nos controllers + validações de negócio nos services (ex.: funcionário só acede a exames da sua escola).
 - **Erros:** excepções de negócio via `DEIException` → `CustomExceptionHandler` devolve JSON uniforme (`message`, `code`). No frontend, alerta global + `RemoteService.consumeError()` evita mensagens duplicadas.
 - **Ficheiros:** PDFs completos e imagens de fragmentos em disco; a BD guarda apenas paths (sem BLOBs).
 - **Workflow de exames:** estados explícitos na entidade `Exam`. **Publicar notas** (`GRADES_PUBLISHED`, inicia prazo de revisão de 48 h) usa os filtros da listagem (escola e/ou disciplina; sem filtros = âmbito completo do utilizador) e só avança se todos os exames desse âmbito estiverem prontos; é separado de **disponibilizar a prova** (`RELEASED`, aluno vê o PDF).
+- **Upload:** no máximo um exame por aluno e disciplina; rejeitado se já existir.
 - **Revisão:** job agendado `ReviewWindowCloser` fecha prazos expirados; pedidos redistribuem-se como `Evaluate` tipo `REVIEW`; nota final híbrida (nota de revisão se existir, senão nota inicial).
-- **Segmentação:** renderização do PDF no browser com pdf.js; modo páginas inteiras ou recortes manuais (bounding boxes); confirmação envia PNGs + cotações via multipart para o backend.
+- **Segmentação:** renderização do PDF no browser com pdf.js; modos **Páginas** (uma pergunta por página) ou **Recortar** (documento contínuo; um bounding box pode atravessar páginas e gera um PNG por pergunta); em cada pergunta indica-se o tipo (escolha múltipla / resposta curta / longa); confirmação envia PNGs + cotações + tipos via multipart para o backend.
+- **Distribuição:** atribuição equilibrada por carga **ponderada** segundo o tipo de pergunta (`ems.grading.weight.*` em `application.properties`); preferência por professor de escola diferente da do aluno.
 - **Seed:** `DataInitializer` (`CommandLineRunner`) corre primeiro; `ExamDemoSeeder` usa `ApplicationReadyEvent` para garantir que pessoas e escolas já existem.
 - **Estatísticas:** agregações no backend; visualização com Chart.js / vue-chartjs no frontend.
 
@@ -166,8 +168,8 @@ O sistema usa **JWT stateless** com permissões derivadas do `PersonType` ([`Rol
 - **Professor + pessoas:** na listagem só vê pessoas da sua escola; sem escola associada, a lista fica vazia.
 - **Funcionário + perguntas:** `GET /questions` filtrado pela escola do aluno do exame.
 - **Professor + correcção:** `EvaluateInboxDto` não expõe dados do aluno; nota/imagem só acessíveis na atribuição do professor autenticado.
-- **Estatísticas:** dashboard (`GET /statistics`) para admin (global) e funcionário (escola); exames por estado, média por disciplina, progresso de correção e volume de revisões. Professores não têm `STATISTICS_READ`.
-- **Aluno:** sem acesso à listagem de pessoas (`PERSON_READ` removido).
+- **Estatísticas:** dashboard (`GET /statistics`) para admin (global) e funcionário (escola); exames por estado, média por disciplina, progresso de correção e volume de revisões; Professores não têm `STATISTICS_READ`.
+- **Aluno:** sem acesso à listagem de pessoas.
 
 ### Testes automatizados
 
@@ -199,7 +201,7 @@ erDiagram
 | **Subject** | name, code | — |
 | **Person** | name, email, password (BCrypt), type | N:1 School; professor N:1 Subject |
 | **Exam** | state, path, finalScore, reviewDeadline, consultationRequested | N:1 Person (aluno), N:1 Subject |
-| **Question** | number, maxScore, path | N:1 Exam |
+| **Question** | number, maxScore, path, type (MULTIPLE_CHOICE / SHORT_ANSWER / LONG_ANSWER) | N:1 Exam |
 | **Evaluate** | grade, state, type (INITIAL / REVIEW) | N:1 Person (professor), N:1 Question |
 | **ReviewRequest** | justification, status, createdAt | N:1 Question (único por pergunta) |
 

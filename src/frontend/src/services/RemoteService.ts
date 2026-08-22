@@ -136,12 +136,13 @@ export default class RemoteServices {
 
   static async segmentExam(
     examId: number,
-    pages: { blob: Blob; maxScore: number }[]
+    pages: { blob: Blob; maxScore: number; questionType: string }[]
   ): Promise<ExamDto> {
     const formData = new FormData()
     for (const page of pages) {
       formData.append('files', page.blob, 'question.png')
       formData.append('maxScores', String(page.maxScore))
+      formData.append('types', page.questionType)
     }
     return httpClient.post(`/exams/${examId}/segment`, formData, {
       headers: { 'Content-Type': undefined }

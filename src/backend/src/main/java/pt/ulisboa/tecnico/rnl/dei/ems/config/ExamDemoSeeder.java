@@ -33,6 +33,7 @@ import pt.ulisboa.tecnico.rnl.dei.ems.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.ems.person.domain.Person.PersonType;
 import pt.ulisboa.tecnico.rnl.dei.ems.person.repository.PersonRepository;
 import pt.ulisboa.tecnico.rnl.dei.ems.question.domain.Question;
+import pt.ulisboa.tecnico.rnl.dei.ems.question.domain.Question.QuestionType;
 import pt.ulisboa.tecnico.rnl.dei.ems.question.repository.QuestionRepository;
 import pt.ulisboa.tecnico.rnl.dei.ems.reviewrequest.domain.ReviewRequest;
 import pt.ulisboa.tecnico.rnl.dei.ems.reviewrequest.domain.ReviewRequest.ReviewRequestStatus;
@@ -214,9 +215,11 @@ public class ExamDemoSeeder {
 
 	private List<Question> addQuestions(Exam exam) {
 		List<Question> questions = new ArrayList<>();
+		QuestionType[] types = { QuestionType.SHORT_ANSWER, QuestionType.LONG_ANSWER };
 		for (int number = 1; number <= 2; number++) {
 			String path = copyQuestionFragment(exam.getId(), number);
-			Question question = questionRepository.save(new Question(exam, number, MAX_SCORE, path));
+			Question question = questionRepository.save(
+					new Question(exam, number, MAX_SCORE, path, types[number - 1]));
 			questions.add(question);
 		}
 		return questions;

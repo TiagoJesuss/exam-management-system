@@ -123,7 +123,8 @@ public class ExamController {
 	public ExamDto segmentExam(
 			@PathVariable long id,
 			@RequestParam("files") MultipartFile[] files,
-			@RequestParam("maxScores") Double[] maxScores) {
-		return examService.segmentExam(id, files, maxScores);
+			@RequestParam("maxScores") Double[] maxScores,
+			@RequestParam("types") String[] types) {
+		return examService.segmentExam(id, files, maxScores, types);
 	}
 }

@@ -53,7 +53,17 @@
               step="0.5"
               density="compact"
               hide-details
+              class="mb-2"
             ></v-text-field>
+            <v-select
+              v-model="page.questionType"
+              :items="questionTypeOptions"
+              item-title="title"
+              item-value="value"
+              label="Tipo de pergunta"
+              density="compact"
+              hide-details
+            ></v-select>
           </v-card-text>
         </v-card>
       </v-col>
@@ -122,7 +132,17 @@
               step="0.5"
               density="compact"
               hide-details
+              class="mb-2"
             ></v-text-field>
+            <v-select
+              v-model="crop.questionType"
+              :items="questionTypeOptions"
+              item-title="title"
+              item-value="value"
+              label="Tipo de pergunta"
+              density="compact"
+              hide-details
+            ></v-select>
           </v-card-text>
         </v-card>
       </v-col>
@@ -141,9 +161,12 @@ GlobalWorkerOptions.workerSrc = pdfWorker
 
 const MIN_CROP_PX = 8
 
+type QuestionType = 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'LONG_ANSWER'
+
 interface SegmentPage {
   number: number
   maxScore: number
+  questionType: QuestionType
   blob: Blob
   previewUrl: string
   width: number
@@ -157,6 +180,7 @@ interface CropBox {
   w: number
   h: number
   maxScore: number
+  questionType: QuestionType
 }
 
 interface DraftBox {
@@ -181,6 +205,12 @@ const loading = ref(true)
 const confirming = ref(false)
 const error = ref('')
 const info = ref('')
+
+const questionTypeOptions = [
+  { title: 'Escolha múltipla', value: 'MULTIPLE_CHOICE' },
+  { title: 'Resposta curta', value: 'SHORT_ANSWER' },
+  { title: 'Resposta longa', value: 'LONG_ANSWER' }
+]
 
 const canConfirm = computed(() =>
   mode.value === 'pages' ? pages.value.length > 0 : crops.value.length > 0
@@ -313,7 +343,8 @@ function onWindowDrawEnd(event: MouseEvent) {
     y: rect.y,
     w: rect.w,
     h: rect.h,
-    maxScore: 1
+    maxScore: 1,
+    questionType: 'SHORT_ANSWER'
   })
 }
 
@@ -356,6 +387,7 @@ async function loadPdf() {
       rendered.push({
         number: i,
         maxScore: 1,
+        questionType: 'SHORT_ANSWER',
         blob,
         previewUrl: URL.createObjectURL(blob),
         width: canvas.width,
@@ -459,8 +491,15 @@ async function confirm() {
       error.value = 'Todas as cotações devem ser maiores que zero.'
       return
     }
+    if (pages.value.some((p) => !p.questionType)) {
+      error.value = 'Seleccione o tipo de cada pergunta.'
+      return
+    }
   } else if (crops.value.some((c) => !c.maxScore || c.maxScore <= 0)) {
     error.value = 'Todas as cotações devem ser maiores que zero.'
+    return
+  } else if (crops.value.some((c) => !c.questionType)) {
+    error.value = 'Seleccione o tipo de cada pergunta.'
     return
   }
 
@@ -469,11 +508,16 @@ async function confirm() {
   try {
     const items =
       mode.value === 'pages'
-        ? pages.value.map((p) => ({ blob: p.blob, maxScore: p.maxScore }))
+        ? pages.value.map((p) => ({
+            blob: p.blob,
+            maxScore: p.maxScore,
+            questionType: p.questionType
+          }))
         : await Promise.all(
             crops.value.map(async (crop) => ({
               blob: await cropToBlob(crop),
-              maxScore: crop.maxScore
+              maxScore: crop.maxScore,
+              questionType: crop.questionType
             }))
           )
 

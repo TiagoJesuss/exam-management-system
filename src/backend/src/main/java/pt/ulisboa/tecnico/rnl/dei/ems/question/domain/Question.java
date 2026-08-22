@@ -13,6 +13,12 @@ import lombok.Data;
 		uniqueConstraints = @UniqueConstraint(columnNames = { "exam_id", "number" }))
 public class Question {
 
+	public enum QuestionType {
+		MULTIPLE_CHOICE,
+		SHORT_ANSWER,
+		LONG_ANSWER
+	}
+
 	@Id
 	@GeneratedValue
 	private Long id;
@@ -26,6 +32,10 @@ public class Question {
 	@Column(name = "path")
 	private String path;
 
+	@Column(name = "type", nullable = false)
+	@Enumerated(EnumType.STRING)
+	private QuestionType type;
+
 	@ManyToOne
 	@JoinColumn(name = "exam_id", nullable = false)
 	private Exam exam;
@@ -33,10 +43,11 @@ public class Question {
 	protected Question() {
 	}
 
-	public Question(Exam exam, int number, double maxScore, String path) {
+	public Question(Exam exam, int number, double maxScore, String path, QuestionType type) {
 		this.exam = exam;
 		this.number = number;
 		this.maxScore = maxScore;
 		this.path = path;
+		this.type = type;
 	}
 }

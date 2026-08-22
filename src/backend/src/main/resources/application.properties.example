@@ -25,5 +25,9 @@ ems.review.deadline-hours=48
 ems.review.close-check-ms=300000
 # true = 9 exames demo (estados); false = só pessoas/escolas (testar workflow)
 ems.seed.demo-exams=true
+# Carga relativa na distribuição de correcções (por tipo de pergunta)
+ems.grading.weight.multiple-choice=0.3
+ems.grading.weight.short-answer=0.5
+ems.grading.weight.long-answer=1.0
 spring.servlet.multipart.max-file-size=20MB
 spring.servlet.multipart.max-request-size=20MB

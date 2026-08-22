@@ -39,6 +39,7 @@ import pt.ulisboa.tecnico.rnl.dei.ems.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.ems.person.domain.Person.PersonType;
 import pt.ulisboa.tecnico.rnl.dei.ems.person.repository.PersonRepository;
 import pt.ulisboa.tecnico.rnl.dei.ems.question.domain.Question;
+import pt.ulisboa.tecnico.rnl.dei.ems.question.domain.Question.QuestionType;
 import pt.ulisboa.tecnico.rnl.dei.ems.question.repository.QuestionRepository;
 import pt.ulisboa.tecnico.rnl.dei.ems.reviewrequest.domain.ReviewRequest;
 import pt.ulisboa.tecnico.rnl.dei.ems.reviewrequest.domain.ReviewRequest.ReviewRequestStatus;
@@ -80,6 +81,15 @@ public class ExamService {
 
 	@Value("${ems.review.deadline-hours:48}")
 	private long reviewDeadlineHours;
+
+	@Value("${ems.grading.weight.multiple-choice:0.3}")
+	private double weightMultipleChoice;
+
+	@Value("${ems.grading.weight.short-answer:0.5}")
+	private double weightShortAnswer;
+
+	@Value("${ems.grading.weight.long-answer:1.0}")
+	private double weightLongAnswer;
 
 	private Exam fetchExamOrThrow(long id) {
 		return examRepository.findById(id)
@@ -235,7 +245,7 @@ public class ExamService {
 				.filter(p -> p.getType() == PersonType.TEACHER && p.getSubject() != null)
 				.toList();
 
-		Map<Long, Integer> loadByTeacher = new HashMap<>();
+		Map<Long, Double> loadByTeacher = new HashMap<>();
 		Map<Long, Exam> examsById = exams.stream()
 				.collect(Collectors.toMap(Exam::getId, e -> e, (a, b) -> a));
 
@@ -265,13 +275,14 @@ public class ExamService {
 			List<Person> candidates = pickReviewCandidates(teachers, student, initialProfessorId);
 			Person chosen = pickLeastLoaded(candidates, loadByTeacher);
 			evaluateRepository.save(new Evaluate(chosen, question, EvaluateType.REVIEW));
-			loadByTeacher.merge(chosen.getId(), 1, Integer::sum);
+			loadByTeacher.merge(chosen.getId(), gradingWeight(question), Double::sum);
 			request.setStatus(ReviewRequestStatus.DISTRIBUTED);
 		}
 
 		for (Exam exam : examsById.values()) {
 			exam.setState(ExamState.REVIEW_GRADING);
 		}
+
 	}
 
 	private List<Person> pickReviewCandidates(
@@ -358,7 +369,7 @@ public class ExamService {
 			}
 		}
 
-		return examRepository.findAll().stream()
+		List<ExamDto> released = examRepository.findAll().stream()
 				.filter(exam -> exam.getState() == ExamState.GRADES_PUBLISHED)
 				.filter(exam -> exam.getSubject().getId().equals(subject.getId()))
 				.filter(exam -> exam.getStudent().getSchool() != null
@@ -367,6 +378,9 @@ public class ExamService {
 				.peek(this::applyPdfRelease)
 				.map(ExamDto::new)
 				.toList();
+
+
+		return released;
 	}
 
 	/** Null school filter means no school restriction (admin, no filter). Staff always scoped to own school. */
@@ -441,7 +455,7 @@ public class ExamService {
 
 		int assignedCount = 0;
 		int forcedSameSchoolCount = 0;
-		Map<Long, Integer> loadByTeacher = new HashMap<>();
+		Map<Long, Double> loadByTeacher = new HashMap<>();
 
 		for (Map.Entry<Long, List<Question>> entry : questionsBySubject.entrySet()) {
 			Long subjectId = entry.getKey();
@@ -466,7 +480,7 @@ public class ExamService {
 				List<Person> candidates = forced ? teachers : preferred;
 				Person chosen = pickLeastLoaded(candidates, loadByTeacher);
 				evaluateRepository.save(new Evaluate(chosen, question, EvaluateType.INITIAL));
-				loadByTeacher.merge(chosen.getId(), 1, Integer::sum);
+				loadByTeacher.merge(chosen.getId(), gradingWeight(question), Double::sum);
 				assignedCount++;
 				if (forced) {
 					forcedSameSchoolCount++;
@@ -489,12 +503,24 @@ public class ExamService {
 		return !teacher.getSchool().getId().equals(student.getSchool().getId());
 	}
 
-	private Person pickLeastLoaded(List<Person> candidates, Map<Long, Integer> loadByTeacher) {
+	private Person pickLeastLoaded(List<Person> candidates, Map<Long, Double> loadByTeacher) {
 		return candidates.stream()
 				.min(Comparator
-						.comparingInt((Person t) -> loadByTeacher.getOrDefault(t.getId(), 0))
+						.comparingDouble((Person t) -> loadByTeacher.getOrDefault(t.getId(), 0.0))
 						.thenComparing(Person::getId))
 				.orElseThrow();
+	}
+
+	private double gradingWeight(Question question) {
+		QuestionType type = question.getType();
+		if (type == null) {
+			return weightShortAnswer;
+		}
+		return switch (type) {
+			case MULTIPLE_CHOICE -> weightMultipleChoice;
+			case SHORT_ANSWER -> weightShortAnswer;
+			case LONG_ANSWER -> weightLongAnswer;
+		};
 	}
 
 	@Transactional(readOnly = true)
@@ -615,31 +641,46 @@ public class ExamService {
 	}
 
 	@Transactional
-	public ExamDto segmentExam(long id, MultipartFile[] files, Double[] maxScores) {
+	public ExamDto segmentExam(long id, MultipartFile[] files, Double[] maxScores, String[] types) {
 		Exam exam = fetchExamOrThrow(id);
 		assertCanAccessExam(exam);
 
 		if (exam.getState() != ExamState.UPLOADED) {
 			throw new DEIException(ErrorMessage.EXAM_NOT_UPLOADED);
 		}
-		if (files == null || maxScores == null || files.length == 0 || files.length != maxScores.length) {
+		if (files == null || maxScores == null || types == null
+				|| files.length == 0
+				|| files.length != maxScores.length
+				|| files.length != types.length) {
 			throw new DEIException(ErrorMessage.EXAM_SEGMENT_INVALID);
 		}
 
 		for (int i = 0; i < files.length; i++) {
 			MultipartFile file = files[i];
 			Double maxScore = maxScores[i];
-			if (file == null || file.isEmpty() || maxScore == null || maxScore <= 0) {
+			QuestionType type = parseQuestionType(types[i]);
+			if (file == null || file.isEmpty() || maxScore == null || maxScore <= 0 || type == null) {
 				throw new DEIException(ErrorMessage.EXAM_SEGMENT_INVALID);
 			}
 			int number = i + 1;
 			String path = storeQuestionImage(file, exam.getId(), number);
-			questionRepository.save(new Question(exam, number, maxScore, path));
+			questionRepository.save(new Question(exam, number, maxScore, path, type));
 		}
 
 		boolean submissionsClosed = areSubmissionsLocked();
 		exam.setState(submissionsClosed ? ExamState.LOCKED : ExamState.SEGMENTED);
 		return new ExamDto(examRepository.save(exam));
+	}
+
+	private QuestionType parseQuestionType(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		try {
+			return QuestionType.valueOf(raw.trim());
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
 	}
 
 
