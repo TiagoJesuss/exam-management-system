@@ -65,7 +65,7 @@
       Exame carregado com sucesso. Segmente as páginas abaixo.
     </v-alert>
     <p class="text-medium-emphasis mt-2 mb-0">
-      Cada página do PDF corresponde a uma pergunta. Ajuste a cotação máxima se necessário.
+      Escolha o modo Páginas (uma pergunta por página) ou Recortar (áreas manuais). Ajuste a cotação máxima se necessário.
     </p>
     <ExamSegmentPanel :exam-id="examId" />
   </template>

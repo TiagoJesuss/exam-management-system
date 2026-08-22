@@ -3,7 +3,7 @@
     <v-col>
       <h2 class="text-left ml-1">Segmentar exame #{{ examId }}</h2>
       <p class="text-medium-emphasis ml-1 mb-0">
-        Cada página do PDF corresponde a uma pergunta. Ajuste a cotação máxima se necessário.
+        Escolha o modo Páginas (uma pergunta por página) ou Recortar (áreas manuais). Ajuste a cotação máxima se necessário.
       </p>
     </v-col>
     <v-col cols="auto">
