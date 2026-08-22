@@ -4,7 +4,10 @@
       <h2 class="text-left ml-1">Listagem de Disciplinas</h2>
     </v-col>
     <v-col cols="auto">
-      <CreateSubjectDialog @subject-created="getSubjects" />
+      <CreateSubjectDialog
+        v-if="auth.hasPermission('SUBJECT_CREATE')"
+        @subject-created="getSubjects"
+      />
       <EditSubjectDialog
         v-model="editDialogOpen"
         :subject="subjectToEdit"
@@ -16,7 +19,7 @@
 
   <v-text-field
     v-model="search"
-    label="Search"
+    label="Pesquisar"
     prepend-inner-icon="mdi-magnify"
     variant="outlined"
     hide-details
@@ -90,10 +93,15 @@ const subjects: SubjectDto[] = reactive([])
 
 getSubjects()
 async function getSubjects() {
-  subjects.splice(0, subjects.length)
-  subjects.push(...(await RemoteService.getSubjects()))
-  loading.value = false
-  console.log(subjects)
+  loading.value = true
+  try {
+    subjects.splice(0, subjects.length)
+    subjects.push(...(await RemoteService.getSubjects()))
+  } catch {
+    // Erro apresentado pelo alerta global.
+  } finally {
+    loading.value = false
+  }
 }
 
 const editSubject = (subject: SubjectDto) => {
@@ -104,8 +112,12 @@ const editSubject = (subject: SubjectDto) => {
 const deleteSubject = async (subject: SubjectDto) => {
   const ok = confirm(`Apagar ${subject.name}?`)
   if (!ok) return
-  await RemoteService.deleteSubject(subject.id!)
-  await getSubjects()
+  try {
+    await RemoteService.deleteSubject(subject.id!)
+    await getSubjects()
+  } catch {
+    // Erro apresentado pelo alerta global.
+  }
 }
 
 

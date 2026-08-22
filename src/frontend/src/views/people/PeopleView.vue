@@ -4,8 +4,9 @@
       <h2 class="text-left ml-1">Listagem de Pessoas</h2>
     </v-col>
     <v-col cols="auto">
-      <CreatePersonDialog @person-created="getPeople" />
+      <CreatePersonDialog v-if="auth.hasPermission('PERSON_CREATE')" @person-created="getPeople" />
       <EditPersonDialog
+        v-if="auth.hasPermission('PERSON_UPDATE')"
         v-model="editDialogOpen"
         :person="personToEdit"
         @person-updated="getPeople"
@@ -16,7 +17,7 @@
 
   <v-text-field
     v-model="search"
-    label="Search"
+    label="Pesquisar"
     prepend-inner-icon="mdi-magnify"
     variant="outlined"
     hide-details
@@ -56,7 +57,7 @@
         title="Personificar"
       >mdi-account-switch</v-icon>
       <v-icon
-        v-if="auth.hasPermission('PERSON_UPDATE')"
+        v-if="auth.hasPermission('PERSON_UPDATE') && canEditPerson(item)"
         @click="editPerson(item)"
         class="mr-2"
         title="Editar"
@@ -100,6 +101,11 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 
+const canEditPerson = (person: PersonDto) => {
+  if (auth.user?.role !== 'SCHOOL_STAFF') return true
+  return person.type === 'STUDENT' && person.schoolCode === auth.user?.schoolCode
+}
+
 let search = ref('')
 let loading = ref(true)
 const headers = [
@@ -129,28 +135,32 @@ const headers = [
     filterable: false
   },
   {
-    title: "Escola",
-    key: "schoolCode",
+    title: 'Escola',
+    key: 'schoolCode',
     sortable: true,
     filterable: true
   },
   {
-    title: "Disciplina",
-    key: "subjectCode",
+    title: 'Disciplina',
+    key: 'subjectCode',
     sortable: true,
     filterable: true
   }
-  // TODO: maybe add another column with possible actions? (edit / delete)
 ]
 
 const people: PersonDto[] = reactive([])
 
 getPeople()
 async function getPeople() {
-  people.splice(0, people.length)
-  people.push(...(await RemoteService.getPeople()))
-  loading.value = false
-  console.log(people)
+  loading.value = true
+  try {
+    people.splice(0, people.length)
+    people.push(...(await RemoteService.getPeople()))
+  } catch {
+    // Erro apresentado pelo alerta global.
+  } finally {
+    loading.value = false
+  }
 }
 
 const editPerson = (person: PersonDto) => {
@@ -161,8 +171,12 @@ const editPerson = (person: PersonDto) => {
 const deletePerson = async (person: PersonDto) => {
   const ok = confirm(`Apagar ${person.name}?`)
   if (!ok) return
-  await RemoteService.deletePerson(person.id!)
-  await getPeople()
+  try {
+    await RemoteService.deletePerson(person.id!)
+    await getPeople()
+  } catch {
+    // Erro apresentado pelo alerta global.
+  }
 }
 
 // Admin-only: log in as the selected person, then refresh the list under their

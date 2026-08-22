@@ -11,6 +11,7 @@
         ></v-text-field>
 
         <v-select
+          v-if="!isStaffOnly"
           :items="['Administrador', 'Funcionário', 'Professor', 'Aluno']"
           label="Categoria*"
           required
@@ -18,8 +19,16 @@
           @update:model-value="onTypeChange"
         ></v-select>
 
+        <v-text-field
+          v-else
+          label="Categoria"
+          model-value="Aluno"
+          readonly
+          disabled
+        ></v-text-field>
+
         <v-select
-          v-if="needsSubject"
+          v-if="needsSubject && !isStaffOnly"
           :items="subjectOptions"
           item-title="title"
           item-value="value"
@@ -28,13 +37,21 @@
         ></v-select>
 
         <v-select
-          v-if="needsSchool"
+          v-if="needsSchool && !isStaffOnly"
           :items="schoolOptions"
           item-title="title"
           item-value="value"
           :label="schoolLabel"
           v-model="editedPerson.schoolCode"
         ></v-select>
+
+        <v-text-field
+          v-else-if="isStaffOnly"
+          label="Escola"
+          :model-value="editedPerson.schoolCode"
+          readonly
+          disabled
+        ></v-text-field>
       </v-card-text>
 
       <v-divider></v-divider>
@@ -42,13 +59,14 @@
       <v-card-actions>
         <v-spacer></v-spacer>
 
-        <v-btn text="Close" variant="plain" @click="dialog = false"></v-btn>
+        <v-btn text="Fechar" variant="plain" @click="dialog = false"></v-btn>
 
         <v-btn
           color="primary"
-          text="Save"
+          text="Guardar"
           :variant="isFormValid ? 'flat' : 'tonal'"
-          :disabled="!isFormValid"
+          :disabled="!isFormValid || saving"
+          :loading="saving"
           @click="savePerson"
         ></v-btn>
       </v-card-actions>
@@ -62,8 +80,12 @@ import type PersonDto from '@/models/PersonDto'
 import RemoteService from '@/services/RemoteService'
 import type SchoolDto from '@/models/SchoolDto'
 import type SubjectDto from '@/models/SubjectDto'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
+const isStaffOnly = computed(() => auth.user?.role === 'SCHOOL_STAFF')
 const emit = defineEmits(['person-updated'])
+const saving = ref(false)
 
 const typeMappings = {
   'Administrador': 'ADMINISTRATOR',
@@ -112,7 +134,15 @@ watch(
 )
 
 const savePerson = async () => {
-  const type = typeMappings[editedPerson.value.type as keyof typeof typeMappings]
+  const type = isStaffOnly.value
+    ? 'STUDENT'
+    : typeMappings[editedPerson.value.type as keyof typeof typeMappings]
+
+  const schoolCode = isStaffOnly.value
+    ? auth.user?.schoolCode ?? editedPerson.value.schoolCode
+    : (type === 'ADMINISTRATOR' || !editedPerson.value.schoolCode?.trim()
+      ? undefined
+      : editedPerson.value.schoolCode)
 
   const payload: PersonDto = {
     id: editedPerson.value.id,
@@ -120,27 +150,35 @@ const savePerson = async () => {
     email: editedPerson.value.email,
     password: editedPerson.value.password?.trim() ? editedPerson.value.password : undefined,
     type: type,
-    schoolCode: type === 'ADMINISTRATOR' || !editedPerson.value.schoolCode?.trim()
-      ? undefined
-      : editedPerson.value.schoolCode,
+    schoolCode,
     subjectCode: type !== 'TEACHER' || !editedPerson.value.subjectCode?.trim()
       ? undefined
       : editedPerson.value.subjectCode
   }
 
-  await RemoteService.updatePerson(editedPerson.value.id!, payload)
-
-  emit('person-updated')
-  dialog.value = false
+  saving.value = true
+  try {
+    await RemoteService.updatePerson(editedPerson.value.id!, payload)
+    emit('person-updated')
+    dialog.value = false
+  } catch {
+    // Erro apresentado pelo alerta global.
+  } finally {
+    saving.value = false
+  }
 }
 
 const schools = ref<SchoolDto[]>([])
 
 const subjects = ref<SubjectDto[]>([])
 
-onMounted(async () => { 
-  schools.value = await RemoteService.getSchools()
-  subjects.value = await RemoteService.getSubjects() 
+onMounted(async () => {
+  if (auth.hasPermission('SCHOOL_READ')) {
+    schools.value = await RemoteService.getSchools()
+  }
+  if (auth.hasPermission('SUBJECT_READ')) {
+    subjects.value = await RemoteService.getSubjects()
+  }
 })
 
 const schoolOptions = computed(() =>
@@ -167,11 +205,11 @@ const onTypeChange = (type: string) => {
 }
 
 const needsSchool = computed(() =>
-  editedPerson.value.type !== '' && editedPerson.value.type !== 'Administrador'
+  !isStaffOnly.value && editedPerson.value.type !== '' && editedPerson.value.type !== 'Administrador'
 )
 
 const needsSubject = computed(() =>
-  editedPerson.value.type === 'Professor'
+  !isStaffOnly.value && editedPerson.value.type === 'Professor'
 )
 
 const schoolLabel = computed(() =>
@@ -182,7 +220,9 @@ const isFormValid = computed(() => {
   const p = editedPerson.value
   if (!p.name?.trim()) return false
   if (!p.email?.trim()) return false
-  if (!p.type) return false
+  if (!p.type && !isStaffOnly.value) return false
+
+  if (isStaffOnly.value) return true
 
   // Professor: escola e disciplina opcionais
   if (p.type === 'Professor') return true

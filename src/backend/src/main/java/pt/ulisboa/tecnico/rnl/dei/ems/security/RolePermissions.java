@@ -29,19 +29,19 @@ public final class RolePermissions {
 				Permission.SUBJECT_READ,
 				Permission.EXAM_READ,
 				Permission.EXAM_CREATE,
+				Permission.EXAM_RELEASE,
 				Permission.QUESTION_READ,
 				Permission.QUESTION_CREATE));
 
-		// Teachers can read people and statistics.
+		// Teachers: grading inbox only (no statistics dashboard).
 		ROLE_PERMISSIONS.put(PersonType.TEACHER, EnumSet.of(
 				Permission.PERSON_READ,
-				Permission.STATISTICS_READ,
 				Permission.EVALUATE_READ,
 				Permission.EVALUATE_GRADE));
 
-		// Students can read the people directory.
+		// Students consult their own exam grades and released PDFs.
 		ROLE_PERMISSIONS.put(PersonType.STUDENT, EnumSet.of(
-				Permission.PERSON_READ));
+				Permission.EXAM_CONSULT));
 	}
 
 	private RolePermissions() {
