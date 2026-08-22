@@ -4,10 +4,13 @@
       <v-btn variant="text" prepend-icon="mdi-arrow-left" class="ml-n2" :to="{ name: 'grading' }">
         Voltar
       </v-btn>
-      <h2 class="text-left ml-1">Corrigir fragmento</h2>
+      <h2 class="text-left ml-1">
+        {{ evaluate?.type === 'REVIEW' ? 'Rever fragmento' : 'Corrigir fragmento' }}
+      </h2>
       <p v-if="evaluate" class="text-medium-emphasis ml-1 mb-0">
         {{ evaluate.subjectCode }} — pergunta {{ evaluate.questionNumber }}
         (máx. {{ evaluate.maxScore }})
+        <span v-if="evaluate.type === 'REVIEW'"> · revisão</span>
       </p>
     </v-col>
   </v-row>
@@ -32,6 +35,13 @@
         <v-alert v-else type="warning" density="compact">Imagem indisponível.</v-alert>
       </v-col>
       <v-col cols="12" md="4">
+        <template v-if="evaluate.type === 'REVIEW'">
+          <p class="text-body-2 mb-1"><strong>Nota anterior:</strong> {{ evaluate.previousGrade ?? '—' }}</p>
+          <p class="text-body-2 mb-1"><strong>Justificação do aluno:</strong></p>
+          <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+            {{ evaluate.justification || 'Sem justificação.' }}
+          </v-alert>
+        </template>
         <v-text-field
           v-model.number="grade"
           type="number"
@@ -103,7 +113,7 @@ onMounted(async () => {
     const blob = await RemoteService.getEvaluateImage(id)
     imageUrl.value = URL.createObjectURL(blob)
   } catch (e: unknown) {
-    error.value = (e as { message?: string })?.message ?? 'Não foi possível carregar a atribuição.'
+    error.value = RemoteService.consumeError(e)
   } finally {
     loading.value = false
   }
@@ -123,7 +133,7 @@ async function submit() {
     await RemoteService.submitGrade(evaluate.value.id, grade.value)
     await router.push({ name: 'grading' })
   } catch (e: unknown) {
-    error.value = (e as { message?: string })?.message ?? 'Não foi possível submeter a nota.'
+    error.value = RemoteService.consumeError(e)
   } finally {
     submitting.value = false
   }

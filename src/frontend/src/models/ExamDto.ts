@@ -7,6 +7,8 @@ export default class ExamDto {
   schoolCode?: string | null
   subjectCode?: string
   finalScore?: number | null
+  reviewDeadline?: string | null
+  consultationRequested?: boolean
 
   constructor(obj?: Partial<ExamDto>) {
     Object.assign(this, obj)

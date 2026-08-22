@@ -10,6 +10,8 @@ import ExamsView from '@/views/exams/ExamsView.vue'
 import ExamSegmentView from '@/views/exams/ExamSegmentView.vue'
 import GradingInboxView from '@/views/grading/GradingInboxView.vue'
 import GradingDetailView from '@/views/grading/GradingDetailView.vue'
+import MyExamsView from '@/views/student/MyExamsView.vue'
+import MyExamDetailView from '@/views/student/MyExamDetailView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -79,6 +81,18 @@ const router = createRouter({
       name: 'grading-detail',
       component: GradingDetailView,
       meta: { permission: 'EVALUATE_READ' }
+    },
+    {
+      path: '/my-exams',
+      name: 'my-exams',
+      component: MyExamsView,
+      meta: { permission: 'EXAM_CONSULT' }
+    },
+    {
+      path: '/my-exams/:id',
+      name: 'my-exam-detail',
+      component: MyExamDetailView,
+      meta: { permission: 'EXAM_CONSULT' }
     }
   ]
 })

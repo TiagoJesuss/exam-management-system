@@ -6,6 +6,8 @@ export default class EvaluateInboxDto {
   maxScore?: number
   subjectCode?: string
   grade?: number | null
+  justification?: string | null
+  previousGrade?: number | null
 
   constructor(obj?: Partial<EvaluateInboxDto>) {
     Object.assign(this, obj)

@@ -1,6 +1,8 @@
 package pt.ulisboa.tecnico.rnl.dei.ems.exam.domain;
 
 
+import java.time.Instant;
+
 import jakarta.persistence.*;
 import pt.ulisboa.tecnico.rnl.dei.ems.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.ems.subject.domain.Subject;
@@ -17,7 +19,12 @@ public class Exam {
 		SEGMENTED,
 		LOCKED,
 		IN_GRADING,
-		GRADED
+		GRADED,
+		GRADES_PUBLISHED,
+		RELEASED,
+		REVIEW_CLOSED,
+		REVIEW_GRADING,
+		FINAL
 	}
 
 	@Id
@@ -33,6 +40,12 @@ public class Exam {
 
 	@Column(name = "final_score")
 	private Double finalScore;
+
+	@Column(name = "review_deadline")
+	private Instant reviewDeadline;
+
+	@Column(name = "consultation_requested", nullable = false)
+	private boolean consultationRequested = false;
 
 	@ManyToOne
 	@JoinColumn(name = "student_id", nullable = false)

@@ -29,7 +29,8 @@ public class Evaluate {
 	}
 
 	public enum EvaluateType {
-		INITIAL
+		INITIAL,
+		REVIEW
 	}
 
 	@Id

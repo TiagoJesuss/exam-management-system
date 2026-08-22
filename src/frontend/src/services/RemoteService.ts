@@ -7,7 +7,10 @@ import type PersonDto from '@/models/PersonDto'
 import type SchoolDto from '@/models/SchoolDto'
 import type SubjectDto from '@/models/SubjectDto'
 import type ExamDto from '@/models/ExamDto'
+import type ExamConsultationDto from '@/models/ExamConsultationDto'
 import type EvaluateInboxDto from '@/models/EvaluateInboxDto'
+import type ReviewRequestDto from '@/models/ReviewRequestDto'
+import type StatisticsDashboardDto from '@/models/StatisticsDashboardDto'
 import type AuthUser from '@/models/AuthUser'
 
 const httpClient = axios.create()
@@ -90,6 +93,33 @@ export default class RemoteServices {
     return httpClient.get('/exams')
   }
 
+  static async getMyExams(): Promise<ExamDto[]> {
+    return httpClient.get('/exams/mine')
+  }
+
+  static async getExamConsultation(id: number): Promise<ExamConsultationDto> {
+    return httpClient.get(`/exams/${id}/consultation`)
+  }
+
+  static async requestConsultation(id: number): Promise<ExamDto> {
+    return httpClient.post(`/exams/${id}/request-consultation`)
+  }
+
+  static async getReviewRequests(examId: number): Promise<ReviewRequestDto[]> {
+    return httpClient.get(`/exams/${examId}/review-requests`)
+  }
+
+  static async submitReviewRequest(
+    examId: number,
+    questionNumber: number,
+    justification: string
+  ): Promise<ReviewRequestDto> {
+    return httpClient.post(`/exams/${examId}/review-requests`, {
+      questionNumber,
+      justification
+    })
+  }
+
   static async uploadExam(file: File, studentId: number, subjectCode: string): Promise<ExamDto> {
     const formData = new FormData()
     formData.append('file', file)
@@ -126,6 +156,35 @@ export default class RemoteServices {
     return httpClient.post('/exams/distribute')
   }
 
+  static async closeReviewWindows(): Promise<{
+    closedToFinal: number
+    closedToReviewClosed: number
+  }> {
+    return httpClient.post('/exams/close-review-windows')
+  }
+
+  static async releaseExam(id: number): Promise<ExamDto> {
+    return httpClient.post(`/exams/${id}/release`)
+  }
+
+  static async releaseExams(schoolCode: string, subjectCode: string): Promise<ExamDto[]> {
+    return httpClient.post('/exams/release', null, {
+      params: { schoolCode, subjectCode }
+    })
+  }
+
+  static async publishGrades(
+    schoolCode: string | null | undefined,
+    subjectCode: string
+  ): Promise<ExamDto[]> {
+    return httpClient.post('/exams/publish-grades', null, {
+      params: {
+        ...(schoolCode ? { schoolCode } : {}),
+        subjectCode
+      }
+    })
+  }
+
   // --- Evaluates (grading) ---
   static async getMyEvaluates(): Promise<EvaluateInboxDto[]> {
     return httpClient.get('/evaluates/mine')
@@ -141,6 +200,11 @@ export default class RemoteServices {
 
   static async submitGrade(id: number, grade: number): Promise<EvaluateInboxDto> {
     return httpClient.put(`/evaluates/${id}/grade`, { grade })
+  }
+
+  // --- Statistics ---
+  static async getStatistics(): Promise<StatisticsDashboardDto> {
+    return httpClient.get('/statistics')
   }
 
   // --- Authentication ---
@@ -162,12 +226,23 @@ export default class RemoteServices {
 
   static async errorMessage(error: any): Promise<string> {
     if (error.message === 'Network Error') {
-      return 'Unable to connect to the server'
+      return 'Não foi possível ligar ao servidor.'
     } else if (error.message.split(' ')[0] === 'timeout') {
-      return 'Request timeout - Server took too long to respond'
+      return 'Tempo de espera esgotado — o servidor demorou demasiado a responder.'
     } else {
-      return error.response?.data?.message ?? 'Unknown Error'
+      return error.response?.data?.message ?? 'Erro desconhecido.'
     }
+  }
+
+  static consumeError(error: unknown): string {
+    const appearance = useAppearanceStore()
+    if (error instanceof DeiError) {
+      if (appearance.currentErrorMessage === error.message) {
+        appearance.popError()
+      }
+      return error.message
+    }
+    return error instanceof Error ? error.message : 'Erro desconhecido.'
   }
 
   static async handleError(error: any): Promise<never> {

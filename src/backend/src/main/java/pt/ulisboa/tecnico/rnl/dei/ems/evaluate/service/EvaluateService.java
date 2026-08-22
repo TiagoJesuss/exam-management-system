@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,8 @@ import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.DEIException;
 import pt.ulisboa.tecnico.rnl.dei.ems.exceptions.ErrorMessage;
 import pt.ulisboa.tecnico.rnl.dei.ems.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.ems.question.repository.QuestionRepository;
+import pt.ulisboa.tecnico.rnl.dei.ems.reviewrequest.domain.ReviewRequest.ReviewRequestStatus;
+import pt.ulisboa.tecnico.rnl.dei.ems.reviewrequest.repository.ReviewRequestRepository;
 import pt.ulisboa.tecnico.rnl.dei.ems.security.SecurityUtils;
 
 @Service
@@ -33,6 +36,9 @@ public class EvaluateService {
 	@Autowired
 	private QuestionRepository questionRepository;
 
+	@Autowired
+	private ReviewRequestRepository reviewRequestRepository;
+
 	@Transactional(readOnly = true)
 	public List<EvaluateInboxDto> getMyInbox() {
 		Person current = requireCurrentPerson();
@@ -41,7 +47,7 @@ public class EvaluateService {
 						current.getId(),
 						EnumSet.of(EvaluateState.PENDING, EvaluateState.IN_PROGRESS))
 				.stream()
-				.map(EvaluateInboxDto::new)
+				.map(this::toDto)
 				.toList();
 	}
 
@@ -50,7 +56,7 @@ public class EvaluateService {
 		if (evaluate.getState() == EvaluateState.PENDING) {
 			evaluate.setState(EvaluateState.IN_PROGRESS);
 		}
-		return new EvaluateInboxDto(evaluate);
+		return toDto(evaluate);
 	}
 
 	@Transactional(readOnly = true)
@@ -82,11 +88,19 @@ public class EvaluateService {
 
 		evaluate.setGrade(grade);
 		evaluate.setState(EvaluateState.GRADED);
-		tryCompleteExam(evaluate.getQuestion().getExam());
-		return new EvaluateInboxDto(evaluate);
+		if (evaluate.getType() == EvaluateType.INITIAL) {
+			tryCompleteInitialExam(evaluate.getQuestion().getExam());
+		} else if (evaluate.getType() == EvaluateType.REVIEW) {
+			tryCompleteReviewExam(evaluate.getQuestion().getExam());
+		}
+		return toDto(evaluate);
 	}
 
-	private void tryCompleteExam(Exam exam) {
+	private void tryCompleteInitialExam(Exam exam) {
+		if (exam.getState() != ExamState.IN_GRADING) {
+			return;
+		}
+
 		long examId = exam.getId();
 		long questionCount = questionRepository.countByExam_Id(examId);
 		List<Evaluate> evaluates = evaluateRepository.findByQuestion_Exam_IdAndType(
@@ -104,6 +118,78 @@ public class EvaluateService {
 				.sum();
 		exam.setFinalScore(total);
 		exam.setState(ExamState.GRADED);
+	}
+
+	private void tryCompleteReviewExam(Exam exam) {
+		if (exam.getState() != ExamState.REVIEW_GRADING) {
+			return;
+		}
+
+		long examId = exam.getId();
+		List<Evaluate> reviews = evaluateRepository.findByQuestion_Exam_IdAndType(
+				examId, EvaluateType.REVIEW);
+		if (reviews.isEmpty()) {
+			return;
+		}
+		if (reviews.stream().anyMatch(e -> e.getState() != EvaluateState.GRADED)) {
+			return;
+		}
+
+		var reviewGradeByQuestion = reviews.stream()
+				.collect(Collectors.toMap(
+						e -> e.getQuestion().getId(),
+						Evaluate::getGrade,
+						(a, b) -> a));
+
+		List<Evaluate> initials = evaluateRepository.findByQuestion_Exam_IdAndType(
+				examId, EvaluateType.INITIAL);
+		var initialGradeByQuestion = initials.stream()
+				.collect(Collectors.toMap(
+						e -> e.getQuestion().getId(),
+						Evaluate::getGrade,
+						(a, b) -> a));
+
+		double total = questionRepository.findByExam_IdOrderByNumberAsc(examId).stream()
+				.mapToDouble(q -> {
+					Double review = reviewGradeByQuestion.get(q.getId());
+					if (review != null) {
+						return review;
+					}
+					Double initial = initialGradeByQuestion.get(q.getId());
+					return initial != null ? initial : 0.0;
+				})
+				.sum();
+
+		exam.setFinalScore(total);
+		exam.setState(ExamState.FINAL);
+
+		reviewRequestRepository.findByQuestion_Exam_Id(examId)
+				.forEach(request -> request.setStatus(ReviewRequestStatus.CLOSED));
+	}
+
+	private EvaluateInboxDto toDto(Evaluate evaluate) {
+		String justification = null;
+		Double previousGrade = null;
+		if (evaluate.getType() == EvaluateType.REVIEW) {
+			long questionId = evaluate.getQuestion().getId();
+			justification = reviewRequestRepository.findByQuestion_Id(questionId)
+					.map(r -> r.getJustification())
+					.orElse(null);
+			previousGrade = evaluateRepository
+					.findByQuestion_IdAndType(questionId, EvaluateType.INITIAL)
+					.map(Evaluate::getGrade)
+					.orElse(null);
+		}
+		return new EvaluateInboxDto(
+				evaluate.getId(),
+				evaluate.getState().toString(),
+				evaluate.getType().toString(),
+				evaluate.getQuestion().getNumber(),
+				evaluate.getQuestion().getMaxScore(),
+				evaluate.getQuestion().getExam().getSubject().getCode(),
+				evaluate.getGrade(),
+				justification,
+				previousGrade);
 	}
 
 	private Evaluate fetchOwnedOrThrow(long id) {

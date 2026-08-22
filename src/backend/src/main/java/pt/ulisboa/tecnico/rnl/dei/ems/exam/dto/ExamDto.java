@@ -1,5 +1,7 @@
 package pt.ulisboa.tecnico.rnl.dei.ems.exam.dto;
 
+import java.time.Instant;
+
 import pt.ulisboa.tecnico.rnl.dei.ems.exam.domain.Exam;
 
 // Data Transfer Object, to communicate with frontend.
@@ -11,7 +13,9 @@ public record ExamDto(
 		String studentName,
 		String schoolCode,
 		String subjectCode,
-		Double finalScore) {
+		Double finalScore,
+		Instant reviewDeadline,
+		boolean consultationRequested) {
 	public ExamDto(Exam exam) {
 		this(
 				exam.getId(),
@@ -21,6 +25,8 @@ public record ExamDto(
 				exam.getStudent().getName(),
 				exam.getStudent().getSchool() != null ? exam.getStudent().getSchool().getCode() : null,
 				exam.getSubject().getCode(),
-				exam.getFinalScore());
+				exam.getFinalScore(),
+				exam.getReviewDeadline(),
+				exam.isConsultationRequested());
 	}
 }

@@ -16,8 +16,11 @@
     class="text-left mt-2"
     no-data-text="Sem atribuições a apresentar."
     hover
-    @click:row="(_e: unknown, { item }: { item: EvaluateInboxDto }) => openEvaluate(item)"
+    @click:row="onRowClick"
   >
+    <template v-slot:[`item.type`]="{ item }">
+      {{ typeLabel(item.type) }}
+    </template>
     <template v-slot:[`item.state`]="{ item }">
       {{ stateLabel(item.state) }}
     </template>
@@ -36,6 +39,7 @@ const loading = ref(true)
 
 const headers = [
   { title: 'ID', key: 'id', sortable: true },
+  { title: 'Tipo', key: 'type', sortable: true },
   { title: 'Estado', key: 'state', sortable: true },
   { title: 'Disciplina', key: 'subjectCode', sortable: true },
   { title: 'Pergunta', key: 'questionNumber', sortable: true },
@@ -48,9 +52,23 @@ const stateLabels: Record<string, string> = {
   GRADED: 'Corrigido'
 }
 
+const typeLabels: Record<string, string> = {
+  INITIAL: 'Correção',
+  REVIEW: 'Revisão'
+}
+
 function stateLabel(state?: string) {
   if (!state) return ''
   return stateLabels[state] ?? state
+}
+
+function typeLabel(type?: string) {
+  if (!type) return ''
+  return typeLabels[type] ?? type
+}
+
+function onRowClick(_e: unknown, row: { item: EvaluateInboxDto }) {
+  openEvaluate(row.item)
 }
 
 function openEvaluate(item: EvaluateInboxDto) {
@@ -59,7 +77,12 @@ function openEvaluate(item: EvaluateInboxDto) {
 }
 
 onMounted(async () => {
-  evaluates.value = await RemoteService.getMyEvaluates()
-  loading.value = false
+  try {
+    evaluates.value = await RemoteService.getMyEvaluates()
+  } catch {
+    // Erro apresentado pelo alerta global.
+  } finally {
+    loading.value = false
+  }
 })
 </script>

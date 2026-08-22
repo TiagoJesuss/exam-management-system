@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.rnl.dei.ems.evaluate.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -17,7 +18,11 @@ public interface EvaluateRepository extends JpaRepository<Evaluate, Long> {
 
 	boolean existsByQuestion_Exam_IdAndType(long examId, EvaluateType type);
 
+	boolean existsByQuestion_IdAndType(long questionId, EvaluateType type);
+
 	List<Evaluate> findByQuestion_Exam_IdAndType(long examId, EvaluateType type);
+
+	Optional<Evaluate> findByQuestion_IdAndType(long questionId, EvaluateType type);
 
 	List<Evaluate> findByProfessor_IdAndStateIn(long professorId, Collection<EvaluateState> states);
 }
