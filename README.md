@@ -139,7 +139,7 @@ Contas úteis para testar fluxos: **aluno6@** (notas publicadas), **aluno7@** (P
 - **Segmentação:** renderização do PDF no browser com pdf.js; modos **Páginas** (uma pergunta por página) ou **Recortar** (documento contínuo; um bounding box pode atravessar páginas e gera um PNG por pergunta); em cada pergunta indica-se o tipo (escolha múltipla / resposta curta / longa); confirmação envia PNGs + cotações + tipos via multipart para o backend.
 - **Distribuição:** atribuição equilibrada por carga **ponderada** segundo o tipo de pergunta (`ems.grading.weight.*` em `application.properties`); preferência por professor de escola diferente da do aluno.
 - **Seed:** `DataInitializer` (`CommandLineRunner`) corre primeiro; `ExamDemoSeeder` usa `ApplicationReadyEvent` para garantir que pessoas e escolas já existem.
-- **Estatísticas:** agregações no backend; visualização com Chart.js / vue-chartjs no frontend.
+- **Estatísticas:** agregações no backend; visualização com Chart.js / vue-chartjs no frontend. O dashboard mostra sempre a estrutura (valores a 0 sem dados); o gráfico de exames por estado usa rótulos em português.
 - **Auditoria:** log append-only (`audit_logs`) de mutações de domínio: CRUD de pessoas/escolas/disciplinas, upload e segmentação de exames, notas, lock, distribuição, publicação, disponibilização e pedidos/distribuição de revisão. Em edições, a mensagem lista os campos alterados (sem valor de password). O actor é o utilizador efectivo; se houver impersonação, a mensagem inclui `(personificado por {email do admin})`. Só o administrador consulta (`GET /audit-logs`, permissão `AUDIT_READ`); não há API de update/delete. Seeders não geram entradas.
 
 ---

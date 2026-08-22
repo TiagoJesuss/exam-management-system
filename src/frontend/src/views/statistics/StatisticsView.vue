@@ -135,10 +135,23 @@ const averageBarOptions = {
   }
 }
 
+const stateLabels: Record<string, string> = {
+  UPLOADED: 'Carregado',
+  SEGMENTED: 'Segmentado',
+  LOCKED: 'Bloqueado',
+  IN_GRADING: 'Em correção',
+  GRADED: 'Corrigido',
+  GRADES_PUBLISHED: 'Notas publicadas',
+  RELEASED: 'Prova disponibilizada',
+  REVIEW_CLOSED: 'Revisão em curso',
+  REVIEW_GRADING: 'Em revisão',
+  FINAL: 'Final'
+}
+
 const examsChartData = computed(() => {
   const rows = dashboard.value.examsByState ?? []
   return {
-    labels: rows.map((r) => r.label ?? ''),
+    labels: rows.map((r) => stateLabels[r.label ?? ''] ?? r.label ?? ''),
     datasets: [
       {
         label: 'Exames',
