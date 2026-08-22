@@ -117,12 +117,6 @@ const headers = [
     filterable: true
   },
   {
-    title: 'IST ID',
-    key: 'istId',
-    sortable: true,
-    filterable: true
-  },
-  {
     title: 'Tipo',
     key: 'type',
     sortable: true,
