@@ -174,13 +174,13 @@ export default class RemoteServices {
   }
 
   static async publishGrades(
-    schoolCode: string | null | undefined,
-    subjectCode: string
+    schoolCode?: string | null,
+    subjectCode?: string | null
   ): Promise<ExamDto[]> {
     return httpClient.post('/exams/publish-grades', null, {
       params: {
         ...(schoolCode ? { schoolCode } : {}),
-        subjectCode
+        ...(subjectCode ? { subjectCode } : {})
       }
     })
   }

@@ -223,11 +223,12 @@ const resolvedSchoolCode = computed(() =>
 const canPublishGrades = computed(() => {
   const school = resolvedSchoolCode.value
   const subject = filterSubject.value
-  if (!school || !subject) return false
 
-  const scoped = exams.value.filter(
-    (e) => e.schoolCode === school && e.subjectCode === subject
-  )
+  const scoped = exams.value.filter((e) => {
+    if (school && e.schoolCode !== school) return false
+    if (subject && e.subjectCode !== subject) return false
+    return true
+  })
   if (scoped.length === 0) return false
 
   const ready = new Set(['GRADED', 'GRADES_PUBLISHED', 'RELEASED'])
@@ -235,6 +236,15 @@ const canPublishGrades = computed(() => {
   const hasGraded = scoped.some((e) => e.state === 'GRADED')
   return allReady && hasGraded
 })
+
+function publishScopeLabel() {
+  const school = resolvedSchoolCode.value
+  const subject = filterSubject.value
+  if (school && subject) return `${school} / ${subject}`
+  if (school) return `escola ${school}`
+  if (subject) return `disciplina ${subject}`
+  return 'todos os exames visíveis'
+}
 
 const canBulkRelease = computed(() => {
   const school = resolvedSchoolCode.value
@@ -465,16 +475,16 @@ async function releaseExam(item: ExamDto) {
 }
 
 async function publishGrades() {
-  if (!canPublishGrades.value || !resolvedSchoolCode.value || !filterSubject.value) return
+  if (!canPublishGrades.value) return
   const ok = confirm(
-    `Publicar todas as notas corrigidas de ${resolvedSchoolCode.value} / ${filterSubject.value}? Os alunos passam a ver as classificações e inicia-se o prazo de revisão.`
+    `Publicar todas as notas corrigidas de ${publishScopeLabel()}? Os alunos passam a ver as classificações e inicia-se o prazo de revisão.`
   )
   if (!ok) return
   publishingGrades.value = true
   statusMessage.value = ''
   try {
     const published = await RemoteService.publishGrades(
-      canPickSchool.value ? resolvedSchoolCode.value : null,
+      resolvedSchoolCode.value,
       filterSubject.value
     )
     statusType.value = 'success'

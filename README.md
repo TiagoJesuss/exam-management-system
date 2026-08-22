@@ -133,7 +133,7 @@ Contas úteis para testar fluxos: **aluno6@** (notas publicadas), **aluno7@** (P
 - **Autorização:** anotações `@PreAuthorize` nos controllers + validações de negócio nos services (ex.: funcionário só acede a exames da sua escola).
 - **Erros:** excepções de negócio via `DEIException` → `CustomExceptionHandler` devolve JSON uniforme (`message`, `code`). No frontend, alerta global + `RemoteService.consumeError()` evita mensagens duplicadas.
 - **Ficheiros:** PDFs completos e imagens de fragmentos em disco; a BD guarda apenas paths (sem BLOBs).
-- **Workflow de exames:** estados explícitos na entidade `Exam`. **Publicar notas** (`GRADES_PUBLISHED`, inicia prazo de revisão de 48 h) é separado de **disponibilizar a prova** (`RELEASED`, aluno vê o PDF).
+- **Workflow de exames:** estados explícitos na entidade `Exam`. **Publicar notas** (`GRADES_PUBLISHED`, inicia prazo de revisão de 48 h) usa os filtros da listagem (escola e/ou disciplina; sem filtros = âmbito completo do utilizador) e só avança se todos os exames desse âmbito estiverem prontos; é separado de **disponibilizar a prova** (`RELEASED`, aluno vê o PDF).
 - **Revisão:** job agendado `ReviewWindowCloser` fecha prazos expirados; pedidos redistribuem-se como `Evaluate` tipo `REVIEW`; nota final híbrida (nota de revisão se existir, senão nota inicial).
 - **Segmentação:** renderização do PDF no browser com pdf.js; modo páginas inteiras ou recortes manuais (bounding boxes); confirmação envia PNGs + cotações via multipart para o backend.
 - **Seed:** `DataInitializer` (`CommandLineRunner`) corre primeiro; `ExamDemoSeeder` usa `ApplicationReadyEvent` para garantir que pessoas e escolas já existem.

@@ -94,7 +94,7 @@ public class ExamController {
 	@PreAuthorize("hasAuthority('EXAM_RELEASE')")
 	public List<ExamDto> publishGrades(
 			@RequestParam(value = "schoolCode", required = false) String schoolCode,
-			@RequestParam("subjectCode") String subjectCode) {
+			@RequestParam(value = "subjectCode", required = false) String subjectCode) {
 		return examService.publishGrades(schoolCode, subjectCode);
 	}
 

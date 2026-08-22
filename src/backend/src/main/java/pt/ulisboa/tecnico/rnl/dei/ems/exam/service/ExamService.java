@@ -293,21 +293,24 @@ public class ExamService {
 	@Transactional
 	public List<ExamDto> publishGrades(String schoolCode, String subjectCode) {
 		Person current = requireCurrentPerson();
-		School school = resolveSchoolForPublish(current, schoolCode);
+		School schoolFilter = resolveSchoolForPublish(current, schoolCode);
 
-		if (subjectCode == null || subjectCode.isBlank()) {
-			throw new DEIException(ErrorMessage.EXAM_PUBLISH_SUBJECT_REQUIRED);
+		Subject subjectFilter = null;
+		if (subjectCode != null && !subjectCode.isBlank()) {
+			subjectFilter = subjectRepository.findByCode(subjectCode)
+					.orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_SUBJECT, subjectCode));
 		}
-		Subject subject = subjectRepository.findByCode(subjectCode)
-				.orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_SUBJECT, subjectCode));
 
 		EnumSet<ExamState> readyStates = EnumSet.of(
 				ExamState.GRADED, ExamState.GRADES_PUBLISHED, ExamState.RELEASED);
 
+		Subject subject = subjectFilter;
+		School school = schoolFilter;
 		List<Exam> scoped = examRepository.findAll().stream()
-				.filter(exam -> exam.getSubject().getId().equals(subject.getId()))
-				.filter(exam -> exam.getStudent().getSchool() != null
-						&& exam.getStudent().getSchool().getId().equals(school.getId()))
+				.filter(exam -> subject == null || exam.getSubject().getId().equals(subject.getId()))
+				.filter(exam -> school == null
+						|| (exam.getStudent().getSchool() != null
+								&& exam.getStudent().getSchool().getId().equals(school.getId())))
 				.filter(exam -> canAccessExam(current, exam))
 				.toList();
 
@@ -366,10 +369,11 @@ public class ExamService {
 				.toList();
 	}
 
+	/** Null school filter means no school restriction (admin, no filter). Staff always scoped to own school. */
 	private School resolveSchoolForPublish(Person current, String schoolCode) {
 		if (current.getType() == PersonType.ADMINISTRATOR) {
 			if (schoolCode == null || schoolCode.isBlank()) {
-				throw new DEIException(ErrorMessage.EXAM_PUBLISH_SCHOOL_REQUIRED);
+				return null;
 			}
 			return schoolRepository.findByCode(schoolCode)
 					.orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_SCHOOL, schoolCode));
