@@ -28,3 +28,11 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# vue-tsc / tsc emit beside sources (do not commit)
+*.vue.js
+*.vue.d.ts
+src/**/*.js
+src/**/*.d.ts
+vite.config.js
+vite.config.d.ts
