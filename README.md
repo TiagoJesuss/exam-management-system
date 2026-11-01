@@ -1,8 +1,8 @@
 # EMS — Exam Management System
 
-Subsistema de gestão de exames nacionais para a candidatura DEI (BL174/2025).
+Plataforma web para gerir exames com correção cega e atómica: o professor corrige fragmentos de perguntas, sem ver o aluno nem a prova inteira, e a nota do exame só fecha quando todos os fragmentos estão classificados. Construído de ponta a ponta (API, regras de acesso, workflow e interface) como exercício prático de uma candidatura ao DEI/IST.
 
-**Stack:** Spring Boot 3 · PostgreSQL · Vue 3 · Vuetify 3
+**Stack:** Java 21 · Spring Boot 3 · PostgreSQL · Vue 3 · Vuetify 3 · JWT
 
 **Estrutura do repositório:**
 
@@ -85,8 +85,8 @@ No arranque do backend, dois componentes preenchem a base de dados:
 
 | Valor | Uso |
 |-------|-----|
-| `true` (defeito) | Pessoas + 9 exames demo (validar UI nos vários estados) |
-| `false` | Só pessoas/escolas/disciplinas — testar o workflow do zero |
+| `false` (defeito) | Só pessoas, escolas e disciplinas — percorrer o workflow do zero |
+| `true` | Pessoas + 9 exames demo, para ver a interface em cada estado. Como há exames a meio do ciclo, o sistema fecha as submissões e não deixa carregar provas novas |
 
 Alterar a propriedade e reiniciar o backend (`ddl-auto=create` recria a BD).
 

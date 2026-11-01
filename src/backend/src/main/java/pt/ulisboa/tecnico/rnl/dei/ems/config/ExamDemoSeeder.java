@@ -72,7 +72,7 @@ public class ExamDemoSeeder {
 			PersonRepository personRepository,
 			SubjectRepository subjectRepository,
 			@Value("${ems.uploads.dir:uploads}") String uploadsDir,
-			@Value("${ems.seed.demo-exams:true}") boolean seedDemoExams) {
+			@Value("${ems.seed.demo-exams:false}") boolean seedDemoExams) {
 		this.examRepository = examRepository;
 		this.questionRepository = questionRepository;
 		this.evaluateRepository = evaluateRepository;
